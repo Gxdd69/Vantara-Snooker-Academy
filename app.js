@@ -16,6 +16,7 @@
    - Multiple game totals
    - Individual loser history
    - Game count in history
+   - Custom rate stored per game
    ========================================================= */
 
 
@@ -163,12 +164,15 @@ document.addEventListener(
     try {
 
       const {
-        data: { session },
+        data: {
+          session
+        },
         error
       } =
         await db.auth.getSession();
 
       if (error) {
+
         console.error(
           "Session error:",
           error
@@ -198,7 +202,9 @@ document.addEventListener(
       );
 
       showLoginModal();
+
     }
+
   }
 );
 
@@ -270,9 +276,12 @@ function setupAuthListener() {
       ) {
 
         lockApplication();
+
       }
+
     }
   );
+
 }
 
 
@@ -357,6 +366,7 @@ function setupEvents() {
       }
 
       closeModal();
+
     }
   );
 
@@ -380,8 +390,10 @@ function setupEvents() {
       }
 
       closeModal();
+
     }
   );
+
 }
 
 
@@ -403,6 +415,7 @@ function startClock() {
           hour12: false
         }
       );
+
   }
 
   updateClock();
@@ -411,6 +424,7 @@ function startClock() {
     updateClock,
     1000
   );
+
 }
 
 
@@ -445,6 +459,7 @@ function setConnection(
         )
       )
     }`;
+
 }
 
 
@@ -501,7 +516,9 @@ async function loadActiveGames() {
     showToast(
       "Could not load table data"
     );
+
   }
+
 }
 
 
@@ -516,7 +533,9 @@ function subscribeToRealtime() {
     db.removeChannel(
       realtimeChannel
     );
+
   }
+
 
   realtimeChannel =
     db
@@ -534,6 +553,7 @@ function subscribeToRealtime() {
         async () => {
 
           await loadActiveGames();
+
         }
       )
 
@@ -549,6 +569,7 @@ function subscribeToRealtime() {
           await updateStats();
 
           await updateUnpaidCount();
+
         }
       )
 
@@ -564,9 +585,12 @@ function subscribeToRealtime() {
               true,
               "Live"
             );
+
           }
+
         }
       );
+
 }
 
 
@@ -587,6 +611,7 @@ function getActiveGame(
         tableNumber
       )
   );
+
 }
 
 
@@ -599,6 +624,7 @@ function getTableRate(
       Number(tableNumber)
     ] || 0
   );
+
 }
 
 
@@ -619,38 +645,19 @@ function getGameRate(
   ) {
 
     return customRate;
+
   }
 
   return getTableRate(
     game?.table_number
   );
+
 }
 
 
 /* =========================================================
    SESSION ENCODING
 ========================================================= */
-
-/*
-  We do NOT require a new Supabase column.
-
-  Session information is stored inside the existing
-  "game" text column.
-
-  Example internally:
-
-  VANTARA_SESSION_V3|{ ... }
-
-  This lets us keep:
-  - previous games
-  - previous amounts
-  - previous losers
-  - previous players
-  - game count
-
-  without changing your existing database structure.
-*/
-
 
 function encodeSession(
   session
@@ -692,7 +699,9 @@ function encodeSession(
         )
       )
     );
+
   }
+
 }
 
 
@@ -704,7 +713,9 @@ function decodeSession(
     typeof value !==
     "string"
   ) {
+
     return null;
+
   }
 
   if (
@@ -712,7 +723,9 @@ function decodeSession(
       SESSION_PREFIX
     )
   ) {
+
     return null;
+
   }
 
   try {
@@ -741,7 +754,9 @@ function decodeSession(
     );
 
     return null;
+
   }
+
 }
 
 
@@ -762,9 +777,11 @@ function getSession(
   ) {
 
     return parsed;
+
   }
 
   return {
+
     version: 3,
 
     original_started_at:
@@ -772,7 +789,9 @@ function getSession(
       new Date().toISOString(),
 
     games: []
+
   };
+
 }
 
 
@@ -788,6 +807,7 @@ function getPreviousGames(
   )
     ? session.games
     : [];
+
 }
 
 
@@ -810,12 +830,14 @@ function getCurrentGameName(
   ) {
 
     return session.current_game;
+
   }
 
   return (
     game?.game ||
     "Snooker"
   );
+
 }
 
 
@@ -845,7 +867,9 @@ function renderTables() {
             tableNumber
           )
     );
+
   }
+
 }
 
 
@@ -871,6 +895,7 @@ function createAvailableTable(
     );
 
   card.innerHTML = `
+
     <div class="table-felt">
 
       <span class="pocket p1"></span>
@@ -882,6 +907,7 @@ function createAvailableTable(
 
     </div>
 
+
     <div class="table-info">
 
       <div class="table-header">
@@ -891,11 +917,15 @@ function createAvailableTable(
         </div>
 
         <div class="table-status">
+
           <span class="status-dot"></span>
+
           Available
+
         </div>
 
       </div>
+
 
       <div class="table-bottom">
 
@@ -910,7 +940,9 @@ function createAvailableTable(
       </div>
 
     </div>
+
   `;
+
 
   card.addEventListener(
     "click",
@@ -921,6 +953,7 @@ function createAvailableTable(
   );
 
   return card;
+
 }
 
 
@@ -989,8 +1022,11 @@ function createPlayingTable(
         </div>
 
         <div class="table-status">
+
           <span class="status-dot"></span>
+
           Playing
+
         </div>
 
       </div>
@@ -999,36 +1035,13 @@ function createPlayingTable(
       <div class="playing-player">
 
         <div class="player-mini-label">
-
-          ${
-            players.length > 1
-              ? "PLAYERS"
-              : "PLAYER"
-          }
-
+          PLAYER
         </div>
 
         <div class="player-mini-name">
-
           ${escapeHTML(
             firstPlayer
           )}
-
-          ${
-            players.length > 1
-              ? `
-                <span
-                  style="
-                    color:var(--muted);
-                    font-size:13px;
-                  "
-                >
-                  +${players.length - 1}
-                </span>
-              `
-              : ""
-          }
-
         </div>
 
       </div>
@@ -1044,25 +1057,26 @@ function createPlayingTable(
 
           ${
             previousGames.length
-              ? ` · Game ${previousGames.length + 1}`
+              ? ` · ${
+                  previousGames.length + 1
+                } games`
               : ""
           }
 
         </div>
 
-        <div
-          class="timer"
-          data-start="${escapeAttribute(
-            game.started_at
-          )}"
-        >
-          ${elapsed}
+        <div class="timer">
+          ${formatDuration(
+            elapsed
+          )}
         </div>
 
       </div>
 
     </div>
+
   `;
+
 
   card.addEventListener(
     "click",
@@ -1073,33 +1087,8 @@ function createPlayingTable(
   );
 
   return card;
+
 }
-
-
-/* =========================================================
-   TIMER
-========================================================= */
-
-setInterval(
-  () => {
-
-    document
-      .querySelectorAll(
-        ".timer[data-start]"
-      )
-      .forEach(
-        timer => {
-
-          timer.textContent =
-            getElapsedTime(
-              timer.dataset.start
-            );
-        }
-      );
-
-  },
-  1000
-);
 
 
 /* =========================================================
@@ -1116,73 +1105,81 @@ function openStartGameModal(
   selectedGame =
     "Snooker";
 
-  selectedPayment =
-    "Cash";
-
   selectedRate =
     getTableRate(
       tableNumber
     );
 
-  selectedLoser =
-    "";
+  selectedPayment =
+    "Cash";
 
   playerList =
     ["", ""];
 
-  pendingContinueData =
-    null;
-
   renderStartModal();
 
   openModal();
+
 }
 
 
 function renderStartModal() {
 
   const rate =
-    Number.isFinite(
-      Number(selectedRate)
-    )
-      ? Number(selectedRate)
-      : getTableRate(
-          selectedTable
-        );
-
-  selectedRate =
-    rate;
-
-  const players =
-    normalizePlayers(
-      playerList
-    );
-
-  const extraCharge =
-    calculateExtraPlayerCharge(
-      players.length
-    );
-
-  const firstHourTotal =
-    Math.round(
-      rate +
-      extraCharge
-    );
-
+    Number(selectedRate) ||
+    0;
 
   modal.dataset.loginRequired =
     "false";
 
-
   modal.innerHTML = `
 
     <h2>
-      Start Game
+      Start Table
     </h2>
 
     <div class="modal-sub">
-      Table ${selectedTable}
-      · Set your price before starting
+
+      Table
+      ${escapeHTML(
+        selectedTable
+      )}
+
+      · Start new game
+
+    </div>
+
+
+    <label class="form-label">
+      Game
+    </label>
+
+    <div class="game-options">
+
+      ${GAME_TYPES
+        .map(
+          gameType =>
+            `
+              <button
+                type="button"
+                class="game-option ${
+                  gameType ===
+                  selectedGame
+                    ? "selected"
+                    : ""
+                }"
+                data-game="${escapeAttribute(
+                  gameType
+                )}"
+              >
+                ${escapeHTML(
+                  gameType
+                )}
+              </button>
+            `
+        )
+        .join("")}
+
     </div>
 
 
@@ -1209,35 +1206,8 @@ function renderStartModal() {
     </div>
 
 
-    <label class="form-label">
-      Game
-    </label>
-
-    <div class="game-options">
-
-      ${GAME_TYPES
-        .map(
-          game =>
-            `
-              <button
-                type="button"
-                class="game-option ${
-                  game === selectedGame
-                    ? "selected"
-                    : ""
-                }"
-                data-game="${escapeAttribute(
-                  game
-                )}"
-              >
-                ${escapeHTML(
-                  game
-                )}
-              </button>
-            `
-        )
-        .join("")}
-
+    <div class="amount-edit-hint">
+      You can change the table price for this game.
     </div>
 
 
@@ -1245,7 +1215,7 @@ function renderStartModal() {
       Players
     </label>
 
-    <div id="playersContainer">
+    <div id="startPlayers">
 
       ${playerList
         .map(
@@ -1269,11 +1239,11 @@ function renderStartModal() {
                 >
 
                 ${
-                  index > 1
+                  playerList.length > 1
                     ? `
                       <button
                         type="button"
-                        class="remove-player"
+                        class="remove-player remove-start-player"
                         data-index="${index}"
                       >
                         ×
@@ -1293,7 +1263,7 @@ function renderStartModal() {
     <button
       type="button"
       class="add-btn"
-      id="addPlayerBtn"
+      id="addStartPlayer"
     >
       + Add Player
     </button>
@@ -1302,34 +1272,39 @@ function renderStartModal() {
     <div class="bill">
 
       <div class="bill-line">
-        <span>Table rate</span>
-        <b id="ratePreview">
-          ₹${rate}/hr
+
+        <span>
+          Players
+        </span>
+
+        <b id="startPlayerCount">
+          ${playerList.length}
         </b>
+
       </div>
 
       <div class="bill-line">
-        <span>Players</span>
-        <b id="playerCountPreview">
-          ${players.length}
-        </b>
-      </div>
 
-      <div class="bill-line">
-        <span>Extra player charge</span>
-        <b id="extraPlayerPreview">
-          ₹${extraCharge}
+        <span>
+          Extra player charge
+        </span>
+
+        <b id="startExtra">
+          ₹0
         </b>
+
       </div>
 
       <div class="bill-line bill-total">
+
         <span>
-          First game total
+          Starting amount
         </span>
 
-        <b id="firstHourTotalPreview">
-          ₹${firstHourTotal}
+        <b id="startTotal">
+          ₹${rate}
         </b>
+
       </div>
 
     </div>
@@ -1354,44 +1329,15 @@ function renderStartModal() {
       </button>
 
     </div>
+
   `;
 
   setupStartModalEvents();
+
 }
 
 
 function setupStartModalEvents() {
-
-  const rateInput =
-    document.getElementById(
-      "startRate"
-    );
-
-
-  rateInput?.addEventListener(
-    "input",
-    () => {
-
-      const value =
-        Number(
-          rateInput.value
-        );
-
-      if (
-        Number.isFinite(
-          value
-        ) &&
-        value >= 0
-      ) {
-
-        selectedRate =
-          value;
-
-        updateStartPricePreview();
-      }
-    }
-  );
-
 
   document
     .querySelectorAll(
@@ -1421,8 +1367,41 @@ function setupStartModalEvents() {
             button.classList.add(
               "selected"
             );
+
           }
         );
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "startRate"
+    )
+    ?.addEventListener(
+      "input",
+      event => {
+
+        const value =
+          Number(
+            event.target.value
+          );
+
+        if (
+          Number.isFinite(
+            value
+          ) &&
+          value >= 0
+        ) {
+
+          selectedRate =
+            value;
+
+          updateStartPricePreview();
+
+        }
+
       }
     );
 
@@ -1446,15 +1425,17 @@ function setupStartModalEvents() {
               input.value;
 
             updatePlayerPreview();
+
           }
         );
+
       }
     );
 
 
   document
     .querySelectorAll(
-      ".remove-player"
+      ".remove-start-player"
     )
     .forEach(
       button => {
@@ -1477,28 +1458,30 @@ function setupStartModalEvents() {
 
               playerList =
                 [""];
+
             }
 
             renderStartModal();
+
           }
         );
+
       }
     );
 
 
   document
     .getElementById(
-      "addPlayerBtn"
+      "addStartPlayer"
     )
     ?.addEventListener(
       "click",
       () => {
 
-        playerList.push(
-          ""
-        );
+        playerList.push("");
 
         renderStartModal();
+
       }
     );
 
@@ -1521,105 +1504,64 @@ function setupStartModalEvents() {
       "click",
       startGame
     );
+
 }
 
 
 function updatePlayerPreview() {
 
-  const count =
+  const players =
     normalizePlayers(
       playerList
-    ).length;
+    );
 
   const extra =
     calculateExtraPlayerCharge(
-      count
+      players.length
     );
 
   const rate =
-    Number.isFinite(
-      Number(selectedRate)
-    )
-      ? Number(selectedRate)
-      : 0;
+    Number(selectedRate) || 0;
 
-
-  const playerCount =
+  const count =
     document.getElementById(
-      "playerCountPreview"
+      "startPlayerCount"
     );
 
-  const extraElement =
+  const extraEl =
     document.getElementById(
-      "extraPlayerPreview"
+      "startExtra"
     );
 
-  const totalElement =
+  const totalEl =
     document.getElementById(
-      "firstHourTotalPreview"
+      "startTotal"
     );
 
-
-  if (
-    playerCount
-  ) {
-
-    playerCount.textContent =
-      String(count);
+  if (count) {
+    count.textContent =
+      String(players.length);
   }
 
-  if (
-    extraElement
-  ) {
-
-    extraElement.textContent =
+  if (extraEl) {
+    extraEl.textContent =
       `₹${extra}`;
   }
 
-  if (
-    totalElement
-  ) {
-
-    totalElement.textContent =
+  if (totalEl) {
+    totalEl.textContent =
       `₹${Math.round(
-        rate +
-        extra
+        rate + extra
       )}`;
   }
+
 }
 
 
 function updateStartPricePreview() {
 
-  const rate =
-    Number.isFinite(
-      Number(selectedRate)
-    )
-      ? Number(selectedRate)
-      : 0;
-
-  const extra =
-    calculateExtraPlayerCharge(
-      normalizePlayers(
-        playerList
-      ).length
-    );
-
-
-  const rateElement =
-    document.getElementById(
-      "ratePreview"
-    );
-
-  if (
-    rateElement
-  ) {
-
-    rateElement.textContent =
-      `₹${rate}/hr`;
-  }
-
   updatePlayerPreview();
+
 }
 
 
@@ -1657,6 +1599,7 @@ async function startGame() {
           )
         ] =
           input.value.trim();
+
       }
     );
 
@@ -1728,7 +1671,10 @@ async function startGame() {
       games: [],
 
       current_game:
-        selectedGame
+        selectedGame,
+
+      current_rate:
+        customRate
 
     };
 
@@ -1757,6 +1703,7 @@ async function startGame() {
 
           started_at:
             startedAt
+
         });
 
 
@@ -1794,7 +1741,9 @@ async function startGame() {
             "Could not start game"
           )
     );
+
   }
+
 }
 
 
@@ -1823,6 +1772,7 @@ function openEndGameModal(
   );
 
   openModal();
+
 }
 
 
@@ -1926,7 +1876,8 @@ function renderEndModal(
             }.
 
             Their amount will be
-            <b>added</b> to this game's amount.
+            <b>added</b>
+            to this game's amount.
 
             <div class="continue-game-list">
 
@@ -1942,31 +1893,40 @@ function renderEndModal(
                         <div>
 
                           <div class="continue-game-title">
+
                             Game ${
                               index + 1
                             }
+
                             ·
+
                             ${escapeHTML(
                               item.game ||
                               "Game"
                             )}
+
                           </div>
 
                           <div class="continue-game-loser">
+
                             Loser:
+
                             ${escapeHTML(
                               item.loser ||
                               "-"
                             )}
+
                           </div>
 
                         </div>
 
                         <div class="continue-game-amount">
+
                           ₹${Number(
                             item.amount ||
                             0
                           )}
+
                         </div>
 
                       </div>
@@ -1985,6 +1945,7 @@ function renderEndModal(
     <div class="bill">
 
       <div class="bill-line">
+
         <span>
           Current players
         </span>
@@ -1992,10 +1953,12 @@ function renderEndModal(
         <b>
           ${players.length}
         </b>
+
       </div>
 
 
       <div class="bill-line">
+
         <span>
           Current duration
         </span>
@@ -2005,10 +1968,12 @@ function renderEndModal(
             duration
           )}
         </b>
+
       </div>
 
 
       <div class="bill-line">
+
         <span>
           Current table rate
         </span>
@@ -2016,10 +1981,12 @@ function renderEndModal(
         <b>
           ₹${rate}/hr
         </b>
+
       </div>
 
 
       <div class="bill-line">
+
         <span>
           Current extra players
         </span>
@@ -2029,10 +1996,12 @@ function renderEndModal(
             players.length
           )}
         </b>
+
       </div>
 
 
       <div class="bill-line">
+
         <span>
           Current game calculated
         </span>
@@ -2040,6 +2009,7 @@ function renderEndModal(
         <b>
           ₹${currentDefault}
         </b>
+
       </div>
 
 
@@ -2047,6 +2017,7 @@ function renderEndModal(
         previousGames.length
           ? `
             <div class="bill-line">
+
               <span>
                 Previous games total
               </span>
@@ -2054,6 +2025,7 @@ function renderEndModal(
               <b>
                 ₹${previousTotal}
               </b>
+
             </div>
           `
           : ""
@@ -2097,9 +2069,12 @@ function renderEndModal(
 
     </div>
 
+
     <div class="amount-edit-hint">
+
       Edit this game's amount manually.
-      Previous game amounts are kept separately.
+      Previous game amounts stay separate.
+
     </div>
 
 
@@ -2110,8 +2085,10 @@ function renderEndModal(
       </label>
 
       <div class="loser-hint">
+
         Enter the loser manually.
-        This loser will be saved against this specific game.
+        This person will be shown as the payer.
+
       </div>
 
       <input
@@ -2171,7 +2148,9 @@ function renderEndModal(
     >
 
       <div class="unpaid-mobile-label">
+
         UNPAID MOBILE NUMBER · OPTIONAL
+
       </div>
 
       <input
@@ -2184,8 +2163,10 @@ function renderEndModal(
       >
 
       <div class="unpaid-mobile-hint">
-        You can leave this blank.
+
+        Optional.
         If entered, it will appear in Unpaid History.
+
       </div>
 
     </div>
@@ -2218,12 +2199,14 @@ function renderEndModal(
       </button>
 
     </div>
+
   `;
 
 
   setupEndModalEvents(
     game
   );
+
 }
 
 
@@ -2279,9 +2262,12 @@ function setupEndModalEvents(
                 selectedPayment ===
                   "Unpaid"
               );
+
             }
+
           }
         );
+
       }
     );
 
@@ -2297,6 +2283,7 @@ function setupEndModalEvents(
         updateGrandTotalPreview(
           game
         );
+
       }
     );
 
@@ -2335,8 +2322,13 @@ function setupEndModalEvents(
           game
         )
     );
+
 }
 
+
+/* =========================================================
+   GRAND TOTAL
+========================================================= */
 
 function updateGrandTotalPreview(
   game
@@ -2379,7 +2371,9 @@ function updateGrandTotalPreview(
       `₹${Math.round(
         total
       )}`;
+
   }
+
 }
 
 
@@ -2424,6 +2418,7 @@ function prepareContinueGame(
     );
 
     return;
+
   }
 
 
@@ -2442,6 +2437,7 @@ function prepareContinueGame(
     );
 
     return;
+
   }
 
 
@@ -2467,12 +2463,14 @@ function prepareContinueGame(
 
     payment:
       selectedPayment
+
   };
 
 
   openContinueSetup(
     game
   );
+
 }
 
 
@@ -2502,6 +2500,7 @@ function openContinueSetup(
   renderContinueSetup(
     game
   );
+
 }
 
 
@@ -2604,6 +2603,7 @@ function renderContinueSetup(
 
       </div>
 
+
       <div class="bill-line">
 
         <span>
@@ -2615,6 +2615,7 @@ function renderContinueSetup(
         </b>
 
       </div>
+
 
       <div class="bill-line bill-total">
 
@@ -2759,6 +2760,7 @@ function renderContinueSetup(
 
       </div>
 
+
       <div class="bill-line">
 
         <span>
@@ -2770,6 +2772,7 @@ function renderContinueSetup(
         </b>
 
       </div>
+
 
       <div class="bill-line bill-total">
 
@@ -2808,12 +2811,14 @@ function renderContinueSetup(
       </button>
 
     </div>
+
   `;
 
 
   setupContinueEvents(
     game
   );
+
 }
 
 
@@ -2853,8 +2858,10 @@ function setupContinueEvents(
             button.classList.add(
               "selected"
             );
+
           }
         );
+
       }
     );
 
@@ -2883,7 +2890,9 @@ function setupContinueEvents(
             value;
 
           updateContinuePreview();
+
         }
+
       }
     );
 
@@ -2907,8 +2916,10 @@ function setupContinueEvents(
               input.value;
 
             updateContinuePreview();
+
           }
         );
+
       }
     );
 
@@ -2938,13 +2949,16 @@ function setupContinueEvents(
 
               playerList =
                 [""];
+
             }
 
             renderContinueSetup(
               game
             );
+
           }
         );
+
       }
     );
 
@@ -2957,13 +2971,12 @@ function setupContinueEvents(
       "click",
       () => {
 
-        playerList.push(
-          ""
-        );
+        playerList.push("");
 
         renderContinueSetup(
           game
         );
+
       }
     );
 
@@ -2982,6 +2995,7 @@ function setupContinueEvents(
         renderEndModal(
           game
         );
+
       }
     );
 
@@ -2997,6 +3011,7 @@ function setupContinueEvents(
           game
         )
     );
+
 }
 
 
@@ -3042,31 +3057,29 @@ function updateContinuePreview() {
     );
 
 
-  if (
-    countElement
-  ) {
+  if (countElement) {
 
     countElement.textContent =
       String(
         players.length
       );
+
   }
 
-  if (
-    extraElement
-  ) {
+  if (extraElement) {
 
     extraElement.textContent =
       `₹${extra}`;
+
   }
 
-  if (
-    amountElement
-  ) {
+  if (amountElement) {
 
     amountElement.textContent =
       `₹${nextAmount}`;
+
   }
+
 }
 
 
@@ -3091,6 +3104,7 @@ async function saveContinueGame(
           )
         ] =
           input.value.trim();
+
       }
     );
 
@@ -3117,6 +3131,7 @@ async function saveContinueGame(
     );
 
     return;
+
   }
 
 
@@ -3132,6 +3147,7 @@ async function saveContinueGame(
     );
 
     return;
+
   }
 
 
@@ -3144,6 +3160,7 @@ async function saveContinueGame(
     );
 
     return;
+
   }
 
 
@@ -3177,10 +3194,6 @@ async function saveContinueGame(
       new Date();
 
 
-    /*
-      Save the game that just ended.
-    */
-
     session.games.push({
 
       game:
@@ -3197,6 +3210,9 @@ async function saveContinueGame(
           pendingContinueData.amount
         ),
 
+      rate:
+        getGameRate(game),
+
       players:
         normalizePlayers(
           game.players
@@ -3211,21 +3227,9 @@ async function saveContinueGame(
 
       payment:
         "Pending"
+
     });
 
-
-    /*
-      Start a completely NEW game timer.
-
-      This is the important fix.
-
-      We DO NOT keep the old timer.
-
-      We DO NOT calculate the final bill
-      from the entire session duration.
-
-      Every game gets its own amount.
-    */
 
     const nextStartedAt =
       now.toISOString();
@@ -3233,6 +3237,9 @@ async function saveContinueGame(
 
     session.current_game =
       selectedGame;
+
+    session.current_rate =
+      rate;
 
 
     const {
@@ -3301,7 +3308,9 @@ async function saveContinueGame(
       error.message ||
       "Could not continue game"
     );
+
   }
+
 }
 
 
@@ -3326,6 +3335,7 @@ async function completeWholeTable(
     showLoginModal();
 
     return;
+
   }
 
 
@@ -3363,6 +3373,7 @@ async function completeWholeTable(
     );
 
     return;
+
   }
 
 
@@ -3381,6 +3392,7 @@ async function completeWholeTable(
     );
 
     return;
+
   }
 
 
@@ -3398,6 +3410,7 @@ async function completeWholeTable(
         )?.value ||
         ""
       ).trim();
+
   }
 
 
@@ -3437,14 +3450,6 @@ async function completeWholeTable(
       );
 
 
-    /*
-      Copy the previous games.
-
-      IMPORTANT:
-      Their amounts are NEVER recalculated.
-      Their amounts are NEVER multiplied.
-    */
-
     const completedGames =
       Array.isArray(
         sessionData.games
@@ -3454,10 +3459,6 @@ async function completeWholeTable(
           ]
         : [];
 
-
-    /*
-      Add the current game.
-    */
 
     completedGames.push({
 
@@ -3475,6 +3476,9 @@ async function completeWholeTable(
           currentAmount
         ),
 
+      rate:
+        getGameRate(game),
+
       players,
 
       loser,
@@ -3483,11 +3487,22 @@ async function completeWholeTable(
 
       payment:
         selectedPayment
+
     });
 
 
     /*
-      Final total = SUM of every game.
+      IMPORTANT:
+      Total is ALWAYS addition.
+
+      Game 1 = 200
+      Game 2 = 200
+      Game 3 = 220
+
+      Final = 620
+
+      Never:
+      200 → 400 → 800
     */
 
     const totalAmount =
@@ -3504,10 +3519,6 @@ async function completeWholeTable(
       );
 
 
-    /*
-      Calculated amount is also summed independently.
-    */
-
     const calculatedTotal =
       completedGames.reduce(
         (
@@ -3522,21 +3533,17 @@ async function completeWholeTable(
 
           const itemRate =
             Number(
-              item.rate ||
-              0
+              item.rate
             );
 
-          /*
-            If older game objects don't
-            have a stored rate, use
-            the active table rate.
-          */
-
           const fallbackRate =
-            itemRate > 0
+            Number.isFinite(
+              itemRate
+            ) &&
+            itemRate >= 0
               ? itemRate
-              : getGameRate(
-                  game
+              : getTableRate(
+                  game.table_number
                 );
 
           const itemDuration =
@@ -3560,10 +3567,6 @@ async function completeWholeTable(
       );
 
 
-    /*
-      Build readable history details.
-    */
-
     const gameSummary =
       buildGameSummary(
         completedGames
@@ -3575,11 +3578,6 @@ async function completeWholeTable(
         completedGames
       );
 
-
-    /*
-      Mobile is included in the loser detail
-      so it works without requiring a new DB column.
-    */
 
     const finalLoserField =
       loserSummary;
@@ -3602,19 +3600,6 @@ async function completeWholeTable(
     const endTime =
       now.toISOString();
 
-
-    /*
-      IMPORTANT:
-      We insert ONE final history row.
-
-      That row contains:
-      - total money
-      - number of games
-      - each game
-      - each loser
-      - each game's amount
-      - mobile if unpaid
-    */
 
     const {
       error:
@@ -3665,6 +3650,7 @@ async function completeWholeTable(
 
           payment:
             selectedPayment
+
         });
 
 
@@ -3672,10 +3658,6 @@ async function completeWholeTable(
       throw historyError;
     }
 
-
-    /*
-      Remove active table.
-    */
 
     const {
       error:
@@ -3714,6 +3696,7 @@ async function completeWholeTable(
       showToast(
         `Completed · ₹${totalAmount} · ${completedGames.length} games`
       );
+
     }
 
 
@@ -3741,7 +3724,9 @@ async function completeWholeTable(
       error.message ||
       "Could not complete table"
     );
+
   }
+
 }
 
 
@@ -3753,41 +3738,29 @@ function calculateAmount(
   tableNumber,
   durationMinutes,
   playerCount,
-  customRate = null
+  rateOverride = null
 ) {
 
-  const parsed =
+  const override =
     Number(
-      customRate
+      rateOverride
     );
 
   const rate =
     Number.isFinite(
-      parsed
+      override
     ) &&
-    parsed >= 0
-      ? parsed
+    override >= 0
+      ? override
       : getTableRate(
           tableNumber
         );
 
 
-  /*
-    Minimum billing is one hour.
-
-    Example:
-    Table 1 = ₹200
-    3 players = +₹20
-
-    Total = ₹220
-  */
-
   const billableHours =
     Math.max(
       1,
-      Number(
-        durationMinutes || 0
-      ) / 60
+      durationMinutes / 60
     );
 
 
@@ -3796,16 +3769,23 @@ function calculateAmount(
     billableHours;
 
 
-  const extraCharge =
-    calculateExtraPlayerCharge(
-      playerCount
+  const extraPlayers =
+    Math.max(
+      0,
+      playerCount - 2
     );
+
+
+  const extraCharge =
+    extraPlayers *
+    EXTRA_PLAYER_CHARGE;
 
 
   return Math.round(
     baseAmount +
     extraCharge
   );
+
 }
 
 
@@ -3813,32 +3793,27 @@ function calculateExtraPlayerCharge(
   playerCount
 ) {
 
-  return (
+  const extraPlayers =
     Math.max(
       0,
-      Number(
-        playerCount || 0
-      ) - 2
-    ) *
+      Number(playerCount) - 2
+    );
+
+  return (
+    extraPlayers *
     EXTRA_PLAYER_CHARGE
   );
+
 }
 
-
-/* =========================================================
-   SESSION TOTAL
-========================================================= */
 
 function getSessionTotal(
   game
 ) {
 
-  const previousGames =
-    getPreviousGames(
-      game
-    );
-
-  return previousGames.reduce(
+  return getPreviousGames(
+    game
+  ).reduce(
     (
       sum,
       item
@@ -3849,96 +3824,101 @@ function getSessionTotal(
       ),
     0
   );
+
 }
 
 
 /* =========================================================
-   GAME SUMMARY
+   SUMMARIES
 ========================================================= */
 
 function buildGameSummary(
   games
 ) {
 
-  if (
-    !games.length
-  ) {
-
-    return "1 Game";
-  }
-
-
-  const parts =
-    games.map(
-      (
-        item,
-        index
-      ) =>
-        `Game ${
-          index + 1
-       }: ${
-          item.game ||
-          "Game"
-        } ₹${Number(
-          item.amount ||
-          0
-        )}`
-    );
+  const list =
+    Array.isArray(games)
+      ? games
+      : [];
 
 
   return (
-    `${games.length} Games · ` +
-    parts.join(
-      " + "
-    )
+    `${list.length} Game${
+      list.length === 1
+        ? ""
+        : "s"
+    } · ` +
+
+    list
+      .map(
+        (
+          item,
+          index
+        ) =>
+          `Game ${
+            index + 1
+          }: ${
+            item.game ||
+            "Game"
+          } · ₹${
+            Number(
+              item.amount || 0
+            )
+          }`
+      )
+      .join(
+        " + "
+      )
   );
+
 }
 
-
-/* =========================================================
-   LOSER SUMMARY
-========================================================= */
 
 function buildLoserSummary(
   games
 ) {
 
-  return games
+  const list =
+    Array.isArray(games)
+      ? games
+      : [];
+
+
+  return list
     .map(
       (
         item,
         index
       ) => {
 
-        let line =
+        const loser =
+          item.loser ||
+          "Not recorded";
+
+        const mobile =
+          item.mobile
+            ? ` · Mobile: ${item.mobile}`
+            : "";
+
+        return (
           `Game ${
             index + 1
           }: ${
-            item.loser ||
-            "Not recorded"
-          }`;
+            loser
+          }${mobile}`
+        );
 
-        if (
-          item.mobile
-        ) {
-
-          line +=
-            ` | Mobile: ${
-              item.mobile
-            }`;
-        }
-
-        return line;
       }
     )
     .join(
       " · "
     );
+
 }
 
 
 /* =========================================================
-   LOGIN
+   LOGIN PROTECTION
 ========================================================= */
 
 async function requireLoginForHistory() {
@@ -3950,16 +3930,16 @@ async function requireLoginForHistory() {
   } =
     await db.auth.getSession();
 
-
   if (!session) {
 
     showLoginModal();
 
     return;
+
   }
 
-
   openHistoryModal();
+
 }
 
 
@@ -3972,26 +3952,33 @@ async function requireLoginForUnpaid() {
   } =
     await db.auth.getSession();
 
-
   if (!session) {
 
     showLoginModal();
 
     return;
+
   }
 
-
   openUnpaidModal();
+
 }
 
+
+/* =========================================================
+   LOGIN
+========================================================= */
 
 function showLoginModal() {
 
   modal.dataset.loginRequired =
     "true";
 
-
   modal.innerHTML = `
+
+    <div class="auth-logo">
+      V
+    </div>
 
     <h2>
       Owner Login
@@ -3999,7 +3986,7 @@ function showLoginModal() {
 
     <div class="modal-sub">
       Login required to access
-      Vantara Snooker Academy.
+      Vantara Snooker Academy
     </div>
 
 
@@ -4029,6 +4016,12 @@ function showLoginModal() {
     >
 
 
+    <div
+      id="loginMessage"
+      class="required-message"
+    ></div>
+
+
     <div class="modal-actions">
 
       <button
@@ -4047,17 +4040,6 @@ function showLoginModal() {
   openModal();
 
 
-  const email =
-    document.getElementById(
-      "loginEmail"
-    );
-
-  const password =
-    document.getElementById(
-      "loginPassword"
-    );
-
-
   document
     .getElementById(
       "loginBtn"
@@ -4068,22 +4050,26 @@ function showLoginModal() {
     );
 
 
-  password?.addEventListener(
-    "keydown",
-    event => {
+  document
+    .getElementById(
+      "loginPassword"
+    )
+    ?.addEventListener(
+      "keydown",
+      event => {
 
-      if (
-        event.key ===
-        "Enter"
-      ) {
+        if (
+          event.key ===
+          "Enter"
+        ) {
 
-        loginUser();
+          loginUser();
+
+        }
+
       }
-    }
-  );
+    );
 
-
-  email?.focus();
 }
 
 
@@ -4097,7 +4083,6 @@ async function loginUser() {
       ?.value
       ?.trim();
 
-
   const password =
     document
       .getElementById(
@@ -4106,16 +4091,14 @@ async function loginUser() {
       ?.value;
 
 
-  if (
-    !email ||
-    !password
-  ) {
+  if (!email || !password) {
 
     showToast(
       "Enter email and password"
     );
 
     return;
+
   }
 
 
@@ -4123,7 +4106,6 @@ async function loginUser() {
     document.getElementById(
       "loginBtn"
     );
-
 
   button.disabled =
     true;
@@ -4135,58 +4117,20 @@ async function loginUser() {
   try {
 
     const {
-      data,
       error
     } =
-      await db.auth
-        .signInWithPassword({
+      await db.auth.signInWithPassword({
 
-          email,
+        email,
 
-          password
-        });
+        password
+
+      });
 
 
     if (error) {
       throw error;
     }
-
-
-    if (
-      !data.session
-    ) {
-
-      throw new Error(
-        "Login succeeded but no session was created"
-      );
-    }
-
-
-    await initializeApp();
-
-
-    modal.dataset.loginRequired =
-      "false";
-
-
-    closeModal();
-
-
-    renderTables();
-
-
-    await loadActiveGames();
-
-
-    await updateStats();
-
-
-    await updateUnpaidCount();
-
-
-    showToast(
-      "Login successful"
-    );
 
 
   } catch (error) {
@@ -4202,17 +4146,18 @@ async function loginUser() {
     button.textContent =
       "Login";
 
-
     showToast(
       error.message ||
       "Login failed"
     );
+
   }
+
 }
 
 
 /* =========================================================
-   HISTORY MODAL
+   HISTORY
 ========================================================= */
 
 async function openHistoryModal() {
@@ -4224,29 +4169,43 @@ async function openHistoryModal() {
   modal.innerHTML = `
 
     <h2>
-      Game History
+      History
     </h2>
 
     <div class="modal-sub">
-      Vantara Snooker Academy
+      Search and export your table records.
     </div>
 
 
-    <div class="date-selector">
+    <div class="history-controls">
 
       <input
-        type="date"
-        id="historyDate"
+        id="historySearch"
         class="input"
-        value="${getTodayDate()}"
+        type="search"
+        placeholder="Search any detail..."
+        autocomplete="off"
       >
 
-      <button
-        class="btn btn-primary"
-        id="loadHistoryBtn"
-      >
-        Load
-      </button>
+
+      <div class="date-selector">
+
+        <input
+          id="historyDate"
+          class="input"
+          type="date"
+          value="${getTodayDate()}"
+        >
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          id="loadHistoryBtn"
+        >
+          Load
+        </button>
+
+      </div>
 
     </div>
 
@@ -4273,13 +4232,44 @@ async function openHistoryModal() {
       () => {
 
         loadHistory(
-          document
-            .getElementById(
-              "historyDate"
-            )
-            ?.value ||
+          document.getElementById(
+            "historyDate"
+          )?.value ||
           getTodayDate()
         );
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "historySearch"
+    )
+    ?.addEventListener(
+      "input",
+      event => {
+
+        const content =
+          document.getElementById(
+            "historyContent"
+          );
+
+        if (
+          content &&
+          Array.isArray(
+            window.currentHistoryRecords
+          )
+        ) {
+
+          renderFilteredHistory(
+            window.currentHistoryRecords,
+            event.target.value,
+            content
+          );
+
+        }
+
       }
     );
 
@@ -4287,12 +4277,9 @@ async function openHistoryModal() {
   await loadHistory(
     getTodayDate()
   );
+
 }
 
-
-/* =========================================================
-   LOAD HISTORY
-========================================================= */
 
 async function loadHistory(
   date
@@ -4302,7 +4289,6 @@ async function loadHistory(
     document.getElementById(
       "historyContent"
     );
-
 
   if (!content) {
     return;
@@ -4343,8 +4329,13 @@ async function loadHistory(
     }
 
 
-    renderHistory(
+    window.currentHistoryRecords =
+      data || [];
+
+
+    renderFilteredHistory(
       data || [],
+      "",
       content,
       date
     );
@@ -4363,13 +4354,49 @@ async function loadHistory(
           Could not load history.
         </div>
       `;
+
   }
+
 }
 
 
-/* =========================================================
-   RENDER HISTORY
-========================================================= */
+function renderFilteredHistory(
+  records,
+  searchTerm,
+  container,
+  date
+) {
+
+  const search =
+    String(
+      searchTerm ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const filtered =
+    records.filter(
+      record =>
+        !search ||
+        recordSearchText(
+          record
+        ).includes(
+          search
+        )
+    );
+
+
+  renderHistory(
+    filtered,
+    container,
+    date ||
+    getTodayDate()
+  );
+
+}
+
 
 function renderHistory(
   records,
@@ -4460,31 +4487,54 @@ function renderHistory(
     <div class="history-summary">
 
       <div class="stat-card">
-        <span>TABLE SESSIONS</span>
+
+        <span>
+          TABLE SESSIONS
+        </span>
+
         <strong>
           ${games}
         </strong>
+
       </div>
 
+
       <div class="stat-card">
-        <span>COLLECTION</span>
+
+        <span>
+          COLLECTION
+        </span>
+
         <strong>
           ₹${total}
         </strong>
+
       </div>
 
+
       <div class="stat-card">
-        <span>CASH</span>
+
+        <span>
+          CASH
+        </span>
+
         <strong>
           ₹${cash}
         </strong>
+
       </div>
 
+
       <div class="stat-card">
-        <span>UNPAID</span>
+
+        <span>
+          UNPAID
+        </span>
+
         <strong style="color:var(--red)">
           ₹${unpaid}
         </strong>
+
       </div>
 
     </div>
@@ -4502,37 +4552,14 @@ function renderHistory(
 
                 <tr>
 
-                  <th>
-                    TIME
-                  </th>
-
-                  <th>
-                    TABLE
-                  </th>
-
-                  <th>
-                    GAMES
-                  </th>
-
-                  <th>
-                    PLAYERS
-                  </th>
-
-                  <th>
-                    LOSERS
-                  </th>
-
-                  <th>
-                    DURATION
-                  </th>
-
-                  <th>
-                    TOTAL
-                  </th>
-
-                  <th>
-                    PAYMENT
-                  </th>
+                  <th>TIME</th>
+                  <th>TABLE</th>
+                  <th>GAMES</th>
+                  <th>PLAYERS</th>
+                  <th>LOSERS</th>
+                  <th>DURATION</th>
+                  <th>TOTAL</th>
+                  <th>PAYMENT</th>
 
                 </tr>
 
@@ -4581,14 +4608,36 @@ function renderHistory(
         Close
       </button>
 
+
       <button
         class="btn btn-primary"
         id="exportHistoryBtn"
       >
-        Export CSV
+        Export Selected Date
       </button>
 
     </div>
+
+
+    <div class="report-actions">
+
+      <button
+        class="btn btn-secondary"
+        id="exportTodayBtn"
+      >
+        Export Today
+      </button>
+
+
+      <button
+        class="btn btn-primary"
+        id="exportMonthBtn"
+      >
+        Export Whole Month
+      </button>
+
+    </div>
+
   `;
 
 
@@ -4614,6 +4663,150 @@ function renderHistory(
           date
         )
     );
+
+
+  document
+    .getElementById(
+      "exportTodayBtn"
+    )
+    ?.addEventListener(
+      "click",
+      async () => {
+
+        const today =
+          getTodayDate();
+
+        const todayRecords =
+          await fetchHistoryRange(
+            today,
+            today
+          );
+
+        exportCSV(
+          todayRecords,
+          today
+        );
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "exportMonthBtn"
+    )
+    ?.addEventListener(
+      "click",
+      async () => {
+
+        const now =
+          new Date();
+
+        const year =
+          now.getFullYear();
+
+        const month =
+          String(
+            now.getMonth() + 1
+          ).padStart(
+            2,
+            "0"
+          );
+
+        const first =
+          `${year}-${month}-01`;
+
+        const lastDay =
+          new Date(
+            year,
+            now.getMonth() + 1,
+            0
+          ).getDate();
+
+        const last =
+          `${year}-${month}-${String(
+            lastDay
+          ).padStart(
+            2,
+            "0"
+          )}`;
+
+        const monthRecords =
+          await fetchHistoryRange(
+            first,
+            last
+          );
+
+        exportCSV(
+          monthRecords,
+          `${year}-${month}`
+        );
+
+      }
+    );
+
+}
+
+
+async function fetchHistoryRange(
+  startDate,
+  endDate
+) {
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await db
+        .from(
+          "game_history"
+        )
+        .select("*")
+        .gte(
+          "game_date",
+          startDate
+        )
+        .lte(
+          "game_date",
+          endDate
+        )
+        .order(
+          "game_date",
+          {
+            ascending: true
+          }
+        )
+        .order(
+          "created_at",
+          {
+            ascending: true
+          }
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
+
+  } catch (error) {
+
+    console.error(
+      "History range error:",
+      error
+    );
+
+    showToast(
+      "Could not load export data"
+    );
+
+    return [];
+
+  }
+
 }
 
 
@@ -4715,11 +4908,9 @@ function renderHistoryRow(
                   <div class="history-game-row">
 
                     <span class="history-game-loser">
-
                       ${escapeHTML(
                         item
                       )}
-
                     </span>
 
                   </div>
@@ -4768,6 +4959,7 @@ function renderHistoryRow(
     </tr>
 
   `;
+
 }
 
 
@@ -4792,18 +4984,19 @@ function parseGameSummary(
     );
 
 
-  if (
-    !match
-  ) {
+  if (!match) {
 
     return [
       {
         title:
           text ||
           "Game",
-        amount: 0
+
+        amount:
+          0
       }
     ];
+
   }
 
 
@@ -4843,9 +5036,12 @@ function parseGameSummary(
                 amountMatch[1]
               )
             : 0
+
       };
+
     }
   );
+
 }
 
 
@@ -4869,6 +5065,7 @@ function parseLoserSummary(
     return [
       "Not recorded"
     ];
+
   }
 
 
@@ -4877,6 +5074,7 @@ function parseLoserSummary(
       /\s+·\s+/
     )
     .filter(Boolean);
+
 }
 
 
@@ -4937,7 +5135,9 @@ async function updateUnpaidCount() {
 
     unpaidBadge.textContent =
       "0";
+
   }
+
 }
 
 
@@ -5031,12 +5231,9 @@ async function openUnpaidModal() {
 
 
   await loadUnpaidGames();
+
 }
 
-
-/* =========================================================
-   LOAD UNPAID
-========================================================= */
 
 async function loadUnpaidGames() {
 
@@ -5108,7 +5305,9 @@ async function loadUnpaidGames() {
           Could not load unpaid games.
         </div>
       `;
+
   }
+
 }
 
 
@@ -5172,6 +5371,7 @@ function recordSearchText(
     )
     .join(" ")
     .toLowerCase();
+
 }
 
 
@@ -5234,6 +5434,7 @@ function renderUnpaidGames(
       `;
 
     return;
+
   }
 
 
@@ -5379,6 +5580,7 @@ function renderUnpaidGames(
               </div>
 
             `;
+
           }
         )
         .join("")}
@@ -5416,11 +5618,15 @@ function renderUnpaidGames(
               openMarkPaidModal(
                 record
               );
+
             }
+
           }
         );
+
       }
     );
+
 }
 
 
@@ -5481,15 +5687,13 @@ function openMarkPaidModal(
           Loser / payer
         </span>
 
-        <b
-          style="
-            color:var(--red)
-          "
-        >
+        <b style="color:var(--red)">
+
           ${escapeHTML(
             record.loser ||
             "Not recorded"
           )}
+
         </b>
 
       </div>
@@ -5581,7 +5785,7 @@ function openMarkPaidModal(
       <button
         type="button"
         class="btn btn-secondary"
-        id="cancelPaidBtn"
+        id="cancelMarkPaid"
       >
         Cancel
       </button>
@@ -5589,9 +5793,9 @@ function openMarkPaidModal(
       <button
         type="button"
         class="btn btn-primary"
-        id="confirmPaidBtn"
+        id="confirmMarkPaid"
       >
-        Confirm Payment
+        Mark Paid
       </button>
 
     </div>
@@ -5627,25 +5831,27 @@ function openMarkPaidModal(
             button.classList.add(
               "selected"
             );
+
           }
         );
+
       }
     );
 
 
   document
     .getElementById(
-      "cancelPaidBtn"
+      "cancelMarkPaid"
     )
     ?.addEventListener(
       "click",
-      openUnpaidModal
+      closeModal
     );
 
 
   document
     .getElementById(
-      "confirmPaidBtn"
+      "confirmMarkPaid"
     )
     ?.addEventListener(
       "click",
@@ -5654,6 +5860,7 @@ function openMarkPaidModal(
           record
         )
     );
+
 }
 
 
@@ -5663,20 +5870,18 @@ async function markGameAsPaid(
 
   const button =
     document.getElementById(
-      "confirmPaidBtn"
+      "confirmMarkPaid"
     );
 
+  if (button) {
 
-  if (!button) {
-    return;
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Saving...";
+
   }
-
-
-  button.disabled =
-    true;
-
-  button.textContent =
-    "Saving...";
 
 
   try {
@@ -5691,7 +5896,10 @@ async function markGameAsPaid(
         .update({
 
           payment:
-            selectedPayment
+            selectedPayment ===
+            "Online"
+              ? "Online"
+              : "Cash"
 
         })
         .eq(
@@ -5705,17 +5913,13 @@ async function markGameAsPaid(
     }
 
 
+    closeModal();
+
     showToast(
-      `Payment marked as ${selectedPayment}`
+      "Payment marked as received"
     );
 
-
-    await updateStats();
-
     await updateUnpaidCount();
-
-    await openUnpaidModal();
-
 
   } catch (error) {
 
@@ -5724,18 +5928,23 @@ async function markGameAsPaid(
       error
     );
 
-    button.disabled =
-      false;
+    if (button) {
 
-    button.textContent =
-      "Confirm Payment";
+      button.disabled =
+        false;
 
+      button.textContent =
+        "Mark Paid";
+
+    }
 
     showToast(
       error.message ||
       "Could not update payment"
     );
+
   }
+
 }
 
 
@@ -5745,20 +5954,31 @@ async function markGameAsPaid(
 
 async function updateStats() {
 
-  availableCount.textContent =
-    String(
-      TOTAL_TABLES -
-      activeGames.length
-    );
-
-
-  playingCount.textContent =
-    String(
-      activeGames.length
-    );
-
-
   try {
+
+    const available =
+      TOTAL_TABLES -
+      activeGames.length;
+
+
+    availableCount.textContent =
+      String(
+        Math.max(
+          0,
+          available
+        )
+      );
+
+
+    playingCount.textContent =
+      String(
+        activeGames.length
+      );
+
+
+    const today =
+      getTodayDate();
+
 
     const {
       data,
@@ -5773,7 +5993,7 @@ async function updateStats() {
         )
         .eq(
           "game_date",
-          getTodayDate()
+          today
         );
 
 
@@ -5786,36 +6006,34 @@ async function updateStats() {
       data || [];
 
 
-    const paid =
-      records.filter(
-        row =>
-          String(
-            row.payment ||
-            ""
-          ).toLowerCase() !==
-          "unpaid"
-      );
-
-
-    const total =
-      paid.reduce(
-        (
-          sum,
-          row
-        ) =>
-          sum +
-          Number(
-            row.amount ||
-            0
-          ),
-        0
-      );
-
-
     gamesCount.textContent =
       String(
         records.length
       );
+
+
+    const total =
+      records
+        .filter(
+          record =>
+            String(
+              record.payment ||
+              ""
+            ).toLowerCase() !==
+            "unpaid"
+        )
+        .reduce(
+          (
+            sum,
+            record
+          ) =>
+            sum +
+            Number(
+              record.amount ||
+              0
+            ),
+          0
+        );
 
 
     collection.textContent =
@@ -5829,12 +6047,8 @@ async function updateStats() {
       error
     );
 
-    gamesCount.textContent =
-      "0";
-
-    collection.textContent =
-      "₹0";
   }
+
 }
 
 
@@ -5847,6 +6061,7 @@ function openModal() {
   modalBackdrop.classList.add(
     "open"
   );
+
 }
 
 
@@ -5858,12 +6073,15 @@ function closeModal() {
   ) {
 
     return;
-  }
 
+  }
 
   modalBackdrop.classList.remove(
     "open"
   );
+
+  modal.innerHTML = "";
+
 }
 
 
@@ -5875,6 +6093,10 @@ function showToast(
   message
 ) {
 
+  clearTimeout(
+    toastTimer
+  );
+
   toast.textContent =
     message;
 
@@ -5883,19 +6105,18 @@ function showToast(
   );
 
 
-  clearTimeout(
-    toastTimer
-  );
-
-
   toastTimer =
     setTimeout(
-      () =>
+      () => {
+
         toast.classList.remove(
           "show"
-        ),
-      3500
+        );
+
+      },
+      2800
     );
+
 }
 
 
@@ -5907,11 +6128,24 @@ function getElapsedTime(
   startedAt
 ) {
 
-  return formatDuration(
-    getDurationMinutes(
+  const start =
+    new Date(
       startedAt
+    ).getTime();
+
+  const now =
+    Date.now();
+
+  return Math.max(
+    0,
+    Math.floor(
+      (
+        now -
+        start
+      ) / 60000
     )
   );
+
 }
 
 
@@ -5919,61 +6153,49 @@ function getDurationMinutes(
   startedAt
 ) {
 
-  const start =
-    new Date(
-      startedAt
-    );
-
-
-  if (
-    Number.isNaN(
-      start.getTime()
-    )
-  ) {
-
-    return 0;
-  }
-
-
-  return Math.max(
-    0,
-    Math.floor(
-      (
-        Date.now() -
-        start.getTime()
-      ) /
-      60000
-    )
+  return getElapsedTime(
+    startedAt
   );
+
 }
 
 
 function calculateMinutesBetween(
-  startValue,
-  endValue
+  start,
+  end
 ) {
 
-  const start =
-    new Date(
-      startValue
-    );
+  if (
+    !start ||
+    !end
+  ) {
 
-  const end =
+    return 0;
+
+  }
+
+  const startTime =
     new Date(
-      endValue
-    );
+      start
+    ).getTime();
+
+  const endTime =
+    new Date(
+      end
+    ).getTime();
 
 
   if (
-    Number.isNaN(
-      start.getTime()
+    !Number.isFinite(
+      startTime
     ) ||
-    Number.isNaN(
-      end.getTime()
+    !Number.isFinite(
+      endTime
     )
   ) {
 
     return 0;
+
   }
 
 
@@ -5981,12 +6203,12 @@ function calculateMinutesBetween(
     0,
     Math.floor(
       (
-        end.getTime() -
-        start.getTime()
-      ) /
-      60000
+        endTime -
+        startTime
+      ) / 60000
     )
   );
+
 }
 
 
@@ -5994,35 +6216,30 @@ function formatDuration(
   minutes
 ) {
 
-  minutes =
+  const total =
     Math.max(
       0,
-      Math.floor(
-        Number(
-          minutes
-        ) || 0
-      )
+      Number(minutes) || 0
     );
-
 
   const hours =
     Math.floor(
-      minutes / 60
+      total / 60
     );
 
-
   const mins =
-    minutes % 60;
+    total % 60;
 
 
-  return hours > 0
-    ? `${hours}h ${String(
-        mins
-      ).padStart(
-        2,
-        "0"
-      )}m`
-    : `${mins}m`;
+  if (hours <= 0) {
+
+    return `${mins}m`;
+
+  }
+
+
+  return `${hours}h ${mins}m`;
+
 }
 
 
@@ -6032,19 +6249,11 @@ function formatDuration(
 
 function getTodayDate() {
 
-  return formatDateForDB(
-    new Date()
-  );
-}
-
-
-function formatDateForDB(
-  date
-) {
+  const date =
+    new Date();
 
   const year =
     date.getFullYear();
-
 
   const month =
     String(
@@ -6053,7 +6262,6 @@ function formatDateForDB(
       2,
       "0"
     );
-
 
   const day =
     String(
@@ -6065,6 +6273,36 @@ function formatDateForDB(
 
 
   return `${year}-${month}-${day}`;
+
+}
+
+
+function formatDateForDB(
+  date
+) {
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  return `${year}-${month}-${day}`;
+
 }
 
 
@@ -6089,20 +6327,29 @@ function formatTimeDisplay(
     )
   ) {
 
-    return "-";
+    return String(
+      value
+    );
+
   }
 
 
   return date.toLocaleTimeString(
     "en-IN",
     {
-      hour: "numeric",
+      hour: "2-digit",
       minute: "2-digit",
-      hour12: true
+      second: "2-digit",
+      hour12: false
     }
   );
+
 }
 
+
+/* =========================================================
+   RECORD DURATION
+========================================================= */
 
 function calculateRecordDuration(
   record
@@ -6114,6 +6361,7 @@ function calculateRecordDuration(
   ) {
 
     return "-";
+
   }
 
 
@@ -6123,6 +6371,7 @@ function calculateRecordDuration(
       record.end_time
     )
   );
+
 }
 
 
@@ -6148,7 +6397,10 @@ function normalizePlayers(
             ""
           ).trim()
       )
-      .filter(Boolean);
+      .filter(
+        Boolean
+      );
+
   }
 
 
@@ -6164,7 +6416,6 @@ function normalizePlayers(
           players
         );
 
-
       if (
         Array.isArray(
           parsed
@@ -6174,6 +6425,7 @@ function normalizePlayers(
         return normalizePlayers(
           parsed
         );
+
       }
 
     } catch {
@@ -6184,12 +6436,17 @@ function normalizePlayers(
           player =>
             player.trim()
         )
-        .filter(Boolean);
+        .filter(
+          Boolean
+        );
+
     }
+
   }
 
 
   return [];
+
 }
 
 
@@ -6205,25 +6462,15 @@ function exportCSV(
   const headers = [
 
     "Date",
-
     "Start Time",
-
     "End Time",
-
     "Table",
-
-    "Game Details",
-
+    "Games",
     "Players",
-
     "Player Count",
-
     "Losers",
-
     "Amount",
-
     "Calculated Amount",
-
     "Payment"
 
   ];
@@ -6272,26 +6519,28 @@ function exportCSV(
     );
 
 
-  const csv =
-    [
-      headers,
-      ...rows
-    ]
-      .map(
-        row =>
-          row
-            .map(
-              value =>
-                `"${String(
-                  value
-                ).replace(
-                  /"/g,
-                  '""'
-                )}"`
-            )
-            .join(",")
-      )
-      .join("\n");
+  const csv = [
+
+    headers,
+
+    ...rows
+
+  ]
+    .map(
+      row =>
+        row
+          .map(
+            value =>
+              `"${String(
+                value
+              ).replace(
+                /"/g,
+                '""'
+              )}"`
+          )
+          .join(",")
+    )
+    .join("\n");
 
 
   const blob =
@@ -6319,6 +6568,7 @@ function exportCSV(
   link.href =
     url;
 
+
   link.download =
     `vantara-history-${date}.csv`;
 
@@ -6327,7 +6577,9 @@ function exportCSV(
     link
   );
 
+
   link.click();
+
 
   link.remove();
 
@@ -6340,11 +6592,12 @@ function exportCSV(
   showToast(
     "CSV exported"
   );
+
 }
 
 
 /* =========================================================
-   ESCAPE
+   SECURITY / HTML HELPERS
 ========================================================= */
 
 function escapeHTML(
@@ -6352,8 +6605,7 @@ function escapeHTML(
 ) {
 
   return String(
-    value ??
-    ""
+    value ?? ""
   )
     .replace(
       /&/g,
@@ -6375,6 +6627,7 @@ function escapeHTML(
       /'/g,
       "&#039;"
     );
+
 }
 
 
@@ -6385,25 +6638,26 @@ function escapeAttribute(
   return escapeHTML(
     value
   );
+
 }
 
 
 /* =========================================================
-   PERIODIC STATS
+   AUTO REFRESH
 ========================================================= */
 
 setInterval(
-  async () => {
+  () => {
 
-    if (
-      !appInitialized
-    ) {
+    if (!appInitialized) {
       return;
     }
 
-    await updateStats();
+    updateStats();
 
-    await updateUnpaidCount();
+    updateUnpaidCount();
+
+    renderTables();
 
   },
   30000
