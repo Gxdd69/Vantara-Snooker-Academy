@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Vantara Snooker Academy</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,6 +21,7 @@
 
   <div class="app-shell">
 
+    <!-- TOP BAR -->
     <header class="topbar">
 
       <div class="brand">
@@ -27,41 +29,29 @@
         <div class="brand-mark">V</div>
 
         <div>
-          <div class="brand-name">
-            Vantara
-          </div>
-
-          <div class="brand-sub">
-            SNOOKER ACADEMY
-          </div>
+          <div class="brand-name">Vantara</div>
+          <div class="brand-sub">SNOOKER ACADEMY</div>
         </div>
 
       </div>
 
       <div class="top-actions">
 
-        <div
-          id="connectionStatus"
-          class="connection-status offline"
-        >
-          <span></span>
-          Connecting
+        <div id="connectionStatus" class="connection-status offline">
+          <span></span> Connecting
         </div>
 
-        <div
-          id="clock"
-          class="clock"
-        >
+        <div id="clock" class="clock">
           --:--:--
         </div>
 
         <button
           id="unpaidBtn"
-          class="history-btn"
+          class="history-btn unpaid-top-btn"
           type="button"
         >
           Unpaid
-          <span id="unpaidCount">0</span>
+          <span id="unpaidBadge" class="top-badge">0</span>
         </button>
 
         <button
@@ -77,6 +67,7 @@
     </header>
 
 
+    <!-- MAIN -->
     <main class="main-content">
 
       <section class="hero">
@@ -100,6 +91,7 @@
       </section>
 
 
+      <!-- STATS -->
       <section class="stats-grid">
 
         <div class="stat-card">
@@ -125,6 +117,7 @@
       </section>
 
 
+      <!-- TABLES -->
       <section>
 
         <div class="section-heading">
@@ -140,7 +133,6 @@
             </h2>
 
           </div>
-
 
           <div class="legend">
 
@@ -171,6 +163,7 @@
   </div>
 
 
+  <!-- MAIN MODAL -->
   <div
     id="modalBackdrop"
     class="modal-backdrop"
@@ -186,14 +179,17 @@
   </div>
 
 
+  <!-- TOAST -->
   <div
     id="toast"
     class="toast"
   ></div>
 
 
+  <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <!-- APP -->
   <script src="app.js"></script>
 
 </body>
