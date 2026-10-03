@@ -1,6 +1,7 @@
 /* =========================================================
    VANTARA SNOOKER ACADEMY
    SUPABASE + LIVE TABLE MANAGEMENT
+   AUTHENTICATION LOCK
 ========================================================= */
 
 /* =========================================================
@@ -12,7 +13,7 @@ const SUPABASE_URL =
 
 /*
   Publishable key only.
-  Never put a Supabase secret/service_role key in browser code.
+  NEVER put a Supabase secret/service_role key in browser code.
 */
 
 const SUPABASE_PUBLISHABLE_KEY =
@@ -66,6 +67,9 @@ let selectedGame = "Snooker";
 let selectedPayment = "Cash";
 let playerList = [""];
 
+let appInitialized = false;
+let realtimeChannel = null;
+
 /* =========================================================
    DOM
 ========================================================= */
@@ -89,10 +93,99 @@ const clock = document.getElementById("clock");
 document.addEventListener("DOMContentLoaded", async () => {
   startClock();
   setupEvents();
+
+  /*
+    IMPORTANT:
+    We check authentication BEFORE initializing
+    the Vantara dashboard.
+  */
+
+  const {
+    data: { session },
+    error
+  } = await db.auth.getSession();
+
+  if (error) {
+    console.error("Session error:", error);
+    showLoginModal();
+    return;
+  }
+
+  if (!session) {
+    showLoginModal();
+    return;
+  }
+
+  await initializeApp();
+  setupAuthListener();
+});
+
+/* =========================================================
+   APP INITIALIZATION
+========================================================= */
+
+async function initializeApp() {
+  if (appInitialized) return;
+
+  appInitialized = true;
+
   renderTables();
   await loadActiveGames();
   subscribeToRealtime();
-});
+}
+
+/* =========================================================
+   AUTH STATE LISTENER
+========================================================= */
+
+function setupAuthListener() {
+  db.auth.onAuthStateChange(async (event, session) => {
+    console.log("Auth event:", event);
+
+    if (event === "SIGNED_IN" && session) {
+      await initializeApp();
+
+      if (modalBackdrop.classList.contains("open")) {
+        closeModal();
+      }
+
+      renderTables();
+      await loadActiveGames();
+
+      showToast("Login successful");
+    }
+
+    if (event === "SIGNED_OUT") {
+      lockApplication();
+    }
+  });
+}
+
+/* =========================================================
+   APPLICATION LOCK
+========================================================= */
+
+function lockApplication() {
+  appInitialized = false;
+
+  activeGames = [];
+
+  if (realtimeChannel) {
+    db.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+
+  floorGrid.innerHTML = "";
+
+  availableCount.textContent = "0";
+  playingCount.textContent = "0";
+  gamesCount.textContent = "0";
+  collection.textContent = "₹0";
+
+  setConnection(false, "Login required");
+
+  showLoginModal();
+}
 
 /* =========================================================
    EVENTS
@@ -101,16 +194,33 @@ document.addEventListener("DOMContentLoaded", async () => {
 function setupEvents() {
   historyBtn.addEventListener("click", requireLoginForHistory);
 
+  /*
+    Clicking outside the modal:
+    Do NOT allow closing the login screen.
+  */
+
   modalBackdrop.addEventListener("click", (event) => {
-    if (event.target === modalBackdrop) {
-      closeModal();
+    if (event.target !== modalBackdrop) return;
+
+    if (
+      modal.dataset.loginRequired === "true"
+    ) {
+      return;
     }
+
+    closeModal();
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeModal();
+    if (event.key !== "Escape") return;
+
+    if (
+      modal.dataset.loginRequired === "true"
+    ) {
+      return;
     }
+
+    closeModal();
   });
 }
 
@@ -121,9 +231,13 @@ function setupEvents() {
 function startClock() {
   function updateClock() {
     const now = new Date();
-    clock.textContent = now.toLocaleTimeString("en-IN", {
-      hour12: false
-    });
+
+    clock.textContent = now.toLocaleTimeString(
+      "en-IN",
+      {
+        hour12: false
+      }
+    );
   }
 
   updateClock();
@@ -135,16 +249,23 @@ function startClock() {
 ========================================================= */
 
 function setConnection(online, text) {
-  connectionStatus.classList.remove("online", "offline");
+  connectionStatus.classList.remove(
+    "online",
+    "offline"
+  );
 
   if (online) {
     connectionStatus.classList.add("online");
+
     connectionStatus.innerHTML =
-      "<span></span> " + (text || "Connected");
+      "<span></span> " +
+      (text || "Connected");
   } else {
     connectionStatus.classList.add("offline");
+
     connectionStatus.innerHTML =
-      "<span></span> " + (text || "Offline");
+      "<span></span> " +
+      (text || "Offline");
   }
 }
 
@@ -157,19 +278,33 @@ async function loadActiveGames() {
     const { data, error } = await db
       .from("active_games")
       .select("*")
-      .order("table_number", { ascending: true });
+      .order("table_number", {
+        ascending: true
+      });
 
     if (error) throw error;
 
     activeGames = data || [];
 
     setConnection(true, "Connected");
+
     renderTables();
     updateStats();
+
   } catch (error) {
-    console.error("Active games error:", error);
-    setConnection(false, "Database error");
-    showToast("Could not load table data");
+    console.error(
+      "Active games error:",
+      error
+    );
+
+    setConnection(
+      false,
+      "Database error"
+    );
+
+    showToast(
+      "Could not load table data"
+    );
   }
 }
 
@@ -178,7 +313,11 @@ async function loadActiveGames() {
 ========================================================= */
 
 function subscribeToRealtime() {
-  db
+  if (realtimeChannel) {
+    db.removeChannel(realtimeChannel);
+  }
+
+  realtimeChannel = db
     .channel("vantara-active-games")
     .on(
       "postgres_changes",
@@ -205,12 +344,15 @@ function subscribeToRealtime() {
 function getActiveGame(tableNumber) {
   return activeGames.find(
     game =>
-      Number(game.table_number) === Number(tableNumber)
+      Number(game.table_number) ===
+      Number(tableNumber)
   );
 }
 
 function getTableRate(tableNumber) {
-  return TABLE_RATES[Number(tableNumber)] || 0;
+  return (
+    TABLE_RATES[Number(tableNumber)] || 0
+  );
 }
 
 /* =========================================================
@@ -225,12 +367,17 @@ function renderTables() {
     tableNumber <= TOTAL_TABLES;
     tableNumber++
   ) {
-    const activeGame = getActiveGame(tableNumber);
+    const activeGame =
+      getActiveGame(tableNumber);
 
     if (activeGame) {
-      floorGrid.appendChild(createPlayingTable(activeGame));
+      floorGrid.appendChild(
+        createPlayingTable(activeGame)
+      );
     } else {
-      floorGrid.appendChild(createAvailableTable(tableNumber));
+      floorGrid.appendChild(
+        createAvailableTable(tableNumber)
+      );
     }
   }
 }
@@ -240,10 +387,13 @@ function renderTables() {
 ========================================================= */
 
 function createAvailableTable(tableNumber) {
-  const card = document.createElement("div");
+  const card =
+    document.createElement("div");
+
   card.className = "table-card";
 
-  const rate = getTableRate(tableNumber);
+  const rate =
+    getTableRate(tableNumber);
 
   card.innerHTML = `
     <div class="table-felt">
@@ -257,24 +407,40 @@ function createAvailableTable(tableNumber) {
 
     <div class="table-info">
       <div class="table-header">
-        <div class="table-number">Table ${tableNumber}</div>
+
+        <div class="table-number">
+          Table ${tableNumber}
+        </div>
 
         <div class="table-status">
           <span class="status-dot"></span>
           Available
         </div>
+
       </div>
 
       <div class="table-bottom">
-        <div class="available-text">Tap to start</div>
-        <div class="price">₹${rate}/hr</div>
+
+        <div class="available-text">
+          Tap to start
+        </div>
+
+        <div class="price">
+          ₹${rate}/hr
+        </div>
+
       </div>
     </div>
   `;
 
-  card.addEventListener("click", () => {
-    openStartGameModal(tableNumber);
-  });
+  card.addEventListener(
+    "click",
+    () => {
+      openStartGameModal(
+        tableNumber
+      );
+    }
+  );
 
   return card;
 }
@@ -284,13 +450,23 @@ function createAvailableTable(tableNumber) {
 ========================================================= */
 
 function createPlayingTable(game) {
-  const card = document.createElement("div");
-  card.className = "table-card playing";
+  const card =
+    document.createElement("div");
 
-  const players = normalizePlayers(game.players);
-  const firstPlayer = players[0] || "Player";
-  const elapsed = getElapsedTime(game.started_at);
-  const gameName = game.game || "Snooker";
+  card.className =
+    "table-card playing";
+
+  const players =
+    normalizePlayers(game.players);
+
+  const firstPlayer =
+    players[0] || "Player";
+
+  const elapsed =
+    getElapsedTime(game.started_at);
+
+  const gameName =
+    game.game || "Snooker";
 
   card.innerHTML = `
     <div class="table-felt">
@@ -303,7 +479,9 @@ function createPlayingTable(game) {
     </div>
 
     <div class="playing-overlay">
+
       <div class="table-header">
+
         <div class="table-number">
           Table ${game.table_number}
         </div>
@@ -312,33 +490,47 @@ function createPlayingTable(game) {
           <span class="status-dot"></span>
           Playing
         </div>
+
       </div>
 
       <div class="playing-player">
-        <div class="player-mini-label">PLAYER</div>
+
+        <div class="player-mini-label">
+          PLAYER
+        </div>
+
         <div class="player-mini-name">
           ${escapeHTML(firstPlayer)}
         </div>
+
       </div>
 
       <div class="playing-meta">
+
         <div class="game-mini">
           ${escapeHTML(gameName)}
         </div>
 
         <div
           class="timer"
-          data-start="${escapeAttribute(game.started_at)}"
+          data-start="${escapeAttribute(
+            game.started_at
+          )}"
         >
           ${elapsed}
         </div>
+
       </div>
+
     </div>
   `;
 
-  card.addEventListener("click", () => {
-    openEndGameModal(game);
-  });
+  card.addEventListener(
+    "click",
+    () => {
+      openEndGameModal(game);
+    }
+  );
 
   return card;
 }
@@ -348,9 +540,16 @@ function createPlayingTable(game) {
 ========================================================= */
 
 setInterval(() => {
-  document.querySelectorAll(".timer[data-start]").forEach(timer => {
-    timer.textContent = getElapsedTime(timer.dataset.start);
-  });
+  document
+    .querySelectorAll(
+      ".timer[data-start]"
+    )
+    .forEach(timer => {
+      timer.textContent =
+        getElapsedTime(
+          timer.dataset.start
+        );
+    });
 }, 1000);
 
 /* =========================================================
@@ -372,7 +571,10 @@ function openStartGameModal(tableNumber) {
 ========================================================= */
 
 function renderStartModal() {
-  const rate = getTableRate(selectedTable);
+  const rate =
+    getTableRate(selectedTable);
+
+  modal.dataset.loginRequired = "false";
 
   modal.innerHTML = `
     <h2>Start Game</h2>
@@ -381,35 +583,49 @@ function renderStartModal() {
       Table ${selectedTable} · ₹${rate}/hour
     </div>
 
-    <label class="form-label">Game</label>
+    <label class="form-label">
+      Game
+    </label>
 
     <div class="game-options">
+
       ${GAME_TYPES.map(
         game => `
           <button
             type="button"
             class="game-option ${
-              game === selectedGame ? "selected" : ""
+              game === selectedGame
+                ? "selected"
+                : ""
             }"
-            data-game="${escapeAttribute(game)}"
+            data-game="${escapeAttribute(
+              game
+            )}"
           >
             ${escapeHTML(game)}
           </button>
         `
       ).join("")}
+
     </div>
 
-    <label class="form-label">Players</label>
+    <label class="form-label">
+      Players
+    </label>
 
     <div id="playersContainer">
+
       ${playerList.map(
         (player, index) => `
           <div class="player-row">
+
             <input
               class="input player-input"
               type="text"
               placeholder="Player ${index + 1}"
-              value="${escapeAttribute(player)}"
+              value="${escapeAttribute(
+                player
+              )}"
               data-index="${index}"
             >
 
@@ -426,16 +642,23 @@ function renderStartModal() {
                 `
                 : ""
             }
+
           </div>
         `
       ).join("")}
+
     </div>
 
-    <button type="button" class="add-btn" id="addPlayerBtn">
+    <button
+      type="button"
+      class="add-btn"
+      id="addPlayerBtn"
+    >
       + Add Player
     </button>
 
     <div class="bill">
+
       <div class="bill-line">
         <span>Table rate</span>
         <b>₹${rate}/hr</b>
@@ -443,25 +666,43 @@ function renderStartModal() {
 
       <div class="bill-line">
         <span>Players</span>
-        <b id="playerCountPreview">${playerList.length}</b>
+        <b id="playerCountPreview">
+          ${playerList.length}
+        </b>
       </div>
 
       <div class="bill-line">
         <span>Extra player charge</span>
         <b id="extraPlayerPreview">
-          ₹${Math.max(0, playerList.length - 2) * EXTRA_PLAYER_CHARGE}
+          ₹${
+            Math.max(
+              0,
+              playerList.length - 2
+            ) * EXTRA_PLAYER_CHARGE
+          }
         </b>
       </div>
+
     </div>
 
     <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" id="cancelStart">
+
+      <button
+        type="button"
+        class="btn btn-secondary"
+        id="cancelStart"
+      >
         Cancel
       </button>
 
-      <button type="button" class="btn btn-primary" id="startGameBtn">
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="startGameBtn"
+      >
         Start Game
       </button>
+
     </div>
   `;
 
@@ -473,47 +714,107 @@ function renderStartModal() {
 ========================================================= */
 
 function setupStartModalEvents() {
-  document.querySelectorAll(".game-option").forEach(button => {
-    button.addEventListener("click", () => {
-      selectedGame = button.dataset.game;
+  document
+    .querySelectorAll(".game-option")
+    .forEach(button => {
 
-      document.querySelectorAll(".game-option").forEach(item => {
-        item.classList.remove("selected");
-      });
+      button.addEventListener(
+        "click",
+        () => {
 
-      button.classList.add("selected");
+          selectedGame =
+            button.dataset.game;
+
+          document
+            .querySelectorAll(
+              ".game-option"
+            )
+            .forEach(item => {
+              item.classList.remove(
+                "selected"
+              );
+            });
+
+          button.classList.add(
+            "selected"
+          );
+        }
+      );
     });
-  });
 
-  document.querySelectorAll(".player-input").forEach(input => {
-    input.addEventListener("input", () => {
-      playerList[Number(input.dataset.index)] = input.value;
-      updatePlayerPreview();
+  document
+    .querySelectorAll(".player-input")
+    .forEach(input => {
+
+      input.addEventListener(
+        "input",
+        () => {
+
+          playerList[
+            Number(input.dataset.index)
+          ] = input.value;
+
+          updatePlayerPreview();
+        }
+      );
     });
-  });
 
-  document.querySelectorAll(".remove-player").forEach(button => {
-    button.addEventListener("click", () => {
-      const index = Number(button.dataset.index);
-      playerList.splice(index, 1);
-      renderStartModal();
+  document
+    .querySelectorAll(
+      ".remove-player"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const index =
+            Number(
+              button.dataset.index
+            );
+
+          playerList.splice(
+            index,
+            1
+          );
+
+          renderStartModal();
+        }
+      );
     });
-  });
 
-  document.getElementById("addPlayerBtn").addEventListener("click", () => {
-    playerList.push("");
-    renderStartModal();
-  });
+  document
+    .getElementById(
+      "addPlayerBtn"
+    )
+    .addEventListener(
+      "click",
+      () => {
 
-  document.getElementById("cancelStart").addEventListener(
-    "click",
-    closeModal
-  );
+        playerList.push("");
 
-  document.getElementById("startGameBtn").addEventListener(
-    "click",
-    startGame
-  );
+        renderStartModal();
+      }
+    );
+
+  document
+    .getElementById(
+      "cancelStart"
+    )
+    .addEventListener(
+      "click",
+      closeModal
+    );
+
+  document
+    .getElementById(
+      "startGameBtn"
+    )
+    .addEventListener(
+      "click",
+      startGame
+    );
 }
 
 /* =========================================================
@@ -521,19 +822,34 @@ function setupStartModalEvents() {
 ========================================================= */
 
 function updatePlayerPreview() {
-  const count = playerList.length;
+  const count =
+    playerList.length;
 
   const extra =
-    Math.max(0, count - 2) * EXTRA_PLAYER_CHARGE;
+    Math.max(
+      0,
+      count - 2
+    ) * EXTRA_PLAYER_CHARGE;
 
   const countElement =
-    document.getElementById("playerCountPreview");
+    document.getElementById(
+      "playerCountPreview"
+    );
 
   const extraElement =
-    document.getElementById("extraPlayerPreview");
+    document.getElementById(
+      "extraPlayerPreview"
+    );
 
-  if (countElement) countElement.textContent = count;
-  if (extraElement) extraElement.textContent = `₹${extra}`;
+  if (countElement) {
+    countElement.textContent =
+      count;
+  }
+
+  if (extraElement) {
+    extraElement.textContent =
+      `₹${extra}`;
+  }
 }
 
 /* =========================================================
@@ -541,56 +857,106 @@ function updatePlayerPreview() {
 ========================================================= */
 
 async function startGame() {
-  const inputs = document.querySelectorAll(".player-input");
+
+  /*
+    Extra safety check.
+    Even if someone somehow reaches this function,
+    require a valid Supabase session.
+  */
+
+  const {
+    data: { session }
+  } = await db.auth.getSession();
+
+  if (!session) {
+    showLoginModal();
+    return;
+  }
+
+  const inputs =
+    document.querySelectorAll(
+      ".player-input"
+    );
 
   inputs.forEach(input => {
-    playerList[Number(input.dataset.index)] =
-      input.value.trim();
+    playerList[
+      Number(input.dataset.index)
+    ] = input.value.trim();
   });
 
-  const players = normalizePlayers(playerList);
+  const players =
+    normalizePlayers(playerList);
 
   if (!players[0]) {
-    showToast("Enter Player 1 name");
+    showToast(
+      "Enter Player 1 name"
+    );
     return;
   }
 
   if (players.length === 0) {
-    showToast("Add at least one player");
+    showToast(
+      "Add at least one player"
+    );
     return;
   }
 
-  const button = document.getElementById("startGameBtn");
+  const button =
+    document.getElementById(
+      "startGameBtn"
+    );
 
   button.disabled = true;
-  button.textContent = "Starting...";
+  button.textContent =
+    "Starting...";
 
   try {
-    const { error } = await db
-      .from("active_games")
-      .insert({
-        table_number: selectedTable,
-        game: selectedGame,
-        players,
-        started_at: new Date().toISOString()
-      });
+
+    const { error } =
+      await db
+        .from("active_games")
+        .insert({
+          table_number:
+            selectedTable,
+          game:
+            selectedGame,
+          players,
+          started_at:
+            new Date().toISOString()
+        });
 
     if (error) throw error;
 
     closeModal();
 
-    showToast(`Table ${selectedTable} started`);
+    showToast(
+      `Table ${selectedTable} started`
+    );
+
     await loadActiveGames();
+
   } catch (error) {
-    console.error("Start game error:", error);
+
+    console.error(
+      "Start game error:",
+      error
+    );
 
     button.disabled = false;
-    button.textContent = "Start Game";
+    button.textContent =
+      "Start Game";
 
-    if (error.code === "23505") {
-      showToast("This table is already playing");
+    if (
+      error.code === "23505"
+    ) {
+      showToast(
+        "This table is already playing"
+      );
     } else {
-      showToast(error.message || "Could not start game");
+      showToast(
+        error.message ||
+        "Could not start game"
+      );
     }
   }
 }
@@ -601,6 +967,7 @@ async function startGame() {
 
 function openEndGameModal(game) {
   selectedPayment = "Cash";
+
   renderEndModal(game);
   openModal();
 }
@@ -610,24 +977,38 @@ function openEndGameModal(game) {
 ========================================================= */
 
 function renderEndModal(game) {
-  const players = normalizePlayers(game.players);
+  const players =
+    normalizePlayers(
+      game.players
+    );
 
-  const duration = getDurationMinutes(game.started_at);
+  const duration =
+    getDurationMinutes(
+      game.started_at
+    );
 
-  const calculated = calculateAmount(
-    game.table_number,
-    duration,
-    players.length
-  );
+  const calculated =
+    calculateAmount(
+      game.table_number,
+      duration,
+      players.length
+    );
+
+  modal.dataset.loginRequired =
+    "false";
 
   modal.innerHTML = `
     <h2>Finish Game</h2>
 
     <div class="modal-sub">
-      Table ${game.table_number} · ${escapeHTML(game.game || "Snooker")}
+      Table ${game.table_number} ·
+      ${escapeHTML(
+        game.game || "Snooker"
+      )}
     </div>
 
     <div class="bill">
+
       <div class="bill-line">
         <span>Players</span>
         <b>${players.length}</b>
@@ -635,20 +1016,29 @@ function renderEndModal(game) {
 
       <div class="bill-line">
         <span>Duration</span>
-        <b>${formatDuration(duration)}</b>
+        <b>${formatDuration(
+          duration
+        )}</b>
       </div>
 
       <div class="bill-line">
         <span>Table rate</span>
-        <b>₹${getTableRate(game.table_number)}/hr</b>
+        <b>
+          ₹${getTableRate(
+            game.table_number
+          )}/hr
+        </b>
       </div>
 
       <div class="bill-line">
         <span>Extra player charge</span>
+
         <b>
           ₹${
-            Math.max(0, players.length - 2) *
-            EXTRA_PLAYER_CHARGE
+            Math.max(
+              0,
+              players.length - 2
+            ) * EXTRA_PLAYER_CHARGE
           }
         </b>
       </div>
@@ -657,12 +1047,19 @@ function renderEndModal(game) {
         <span>Calculated amount</span>
         <b>₹${calculated}</b>
       </div>
+
     </div>
 
-    <label class="form-label">Final Amount</label>
+    <label class="form-label">
+      Final Amount
+    </label>
 
     <div class="amount-input-wrap">
-      <span class="amount-symbol">₹</span>
+
+      <span class="amount-symbol">
+        ₹
+      </span>
+
       <input
         id="finalAmount"
         class="input amount-input"
@@ -671,11 +1068,15 @@ function renderEndModal(game) {
         step="1"
         value="${calculated}"
       >
+
     </div>
 
-    <label class="form-label">Payment</label>
+    <label class="form-label">
+      Payment
+    </label>
 
     <div class="payment-options">
+
       <button
         type="button"
         class="pay-option selected"
@@ -691,118 +1092,238 @@ function renderEndModal(game) {
       >
         Online
       </button>
+
     </div>
 
     <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" id="cancelEnd">
+
+      <button
+        type="button"
+        class="btn btn-secondary"
+        id="cancelEnd"
+      >
         Cancel
       </button>
 
-      <button type="button" class="btn btn-primary" id="finishGameBtn">
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="finishGameBtn"
+      >
         Complete Game
       </button>
+
     </div>
   `;
 
-  setupEndModalEvents(game, calculated);
+  setupEndModalEvents(
+    game,
+    calculated
+  );
 }
 
 /* =========================================================
    END MODAL EVENTS
 ========================================================= */
 
-function setupEndModalEvents(game, calculated) {
-  document.querySelectorAll(".pay-option").forEach(button => {
-    button.addEventListener("click", () => {
-      selectedPayment = button.dataset.payment;
+function setupEndModalEvents(
+  game,
+  calculated
+) {
 
-      document.querySelectorAll(".pay-option").forEach(item => {
-        item.classList.remove("selected");
-      });
+  document
+    .querySelectorAll(
+      ".pay-option"
+    )
+    .forEach(button => {
 
-      button.classList.add("selected");
+      button.addEventListener(
+        "click",
+        () => {
+
+          selectedPayment =
+            button.dataset.payment;
+
+          document
+            .querySelectorAll(
+              ".pay-option"
+            )
+            .forEach(item => {
+              item.classList.remove(
+                "selected"
+              );
+            });
+
+          button.classList.add(
+            "selected"
+          );
+        }
+      );
     });
-  });
 
-  document.getElementById("cancelEnd").addEventListener(
-    "click",
-    closeModal
-  );
+  document
+    .getElementById(
+      "cancelEnd"
+    )
+    .addEventListener(
+      "click",
+      closeModal
+    );
 
-  document.getElementById("finishGameBtn").addEventListener(
-    "click",
-    () => finishGame(game, calculated)
-  );
+  document
+    .getElementById(
+      "finishGameBtn"
+    )
+    .addEventListener(
+      "click",
+      () =>
+        finishGame(
+          game,
+          calculated
+        )
+    );
 }
 
 /* =========================================================
    FINISH GAME
 ========================================================= */
 
-async function finishGame(game, calculated) {
-  const amountInput = document.getElementById("finalAmount");
+async function finishGame(
+  game,
+  calculated
+) {
 
-  const finalAmount = Number(amountInput.value);
+  const {
+    data: { session }
+  } = await db.auth.getSession();
 
-  if (!Number.isFinite(finalAmount) || finalAmount < 0) {
-    showToast("Enter a valid final amount");
+  if (!session) {
+    showLoginModal();
     return;
   }
 
-  const button = document.getElementById("finishGameBtn");
+  const amountInput =
+    document.getElementById(
+      "finalAmount"
+    );
+
+  const finalAmount =
+    Number(amountInput.value);
+
+  if (
+    !Number.isFinite(
+      finalAmount
+    ) ||
+    finalAmount < 0
+  ) {
+    showToast(
+      "Enter a valid final amount"
+    );
+    return;
+  }
+
+  const button =
+    document.getElementById(
+      "finishGameBtn"
+    );
 
   button.disabled = true;
-  button.textContent = "Saving...";
+  button.textContent =
+    "Saving...";
 
   try {
-    const now = new Date();
 
-    const players = normalizePlayers(game.players);
+    const now =
+      new Date();
 
-    const startDate = new Date(game.started_at);
+    const players =
+      normalizePlayers(
+        game.players
+      );
 
-    const gameDate = formatDateForDB(startDate);
-    const startTime = startDate.toISOString();
-    const endTime = now.toISOString();
+    const startDate =
+      new Date(
+        game.started_at
+      );
 
-    const { error: historyError } = await db
+    const gameDate =
+      formatDateForDB(
+        startDate
+      );
+
+    const startTime =
+      startDate.toISOString();
+
+    const endTime =
+      now.toISOString();
+
+    const {
+      error: historyError
+    } = await db
       .from("game_history")
       .insert({
-        game_date: gameDate,
-        start_time: startTime,
-        end_time: endTime,
-        table_number: game.table_number,
-        player: players[0] || "",
+        game_date:
+          gameDate,
+        start_time:
+          startTime,
+        end_time:
+          endTime,
+        table_number:
+          game.table_number,
+        player:
+          players[0] || "",
         players,
-        player_count: players.length,
+        player_count:
+          players.length,
         loser: "",
-        game: game.game || "Snooker",
-        calculated_amount: calculated,
-        amount: finalAmount,
-        payment: selectedPayment
+        game:
+          game.game || "Snooker",
+        calculated_amount:
+          calculated,
+        amount:
+          finalAmount,
+        payment:
+          selectedPayment
       });
 
-    if (historyError) throw historyError;
+    if (historyError) {
+      throw historyError;
+    }
 
-    const { error: deleteError } = await db
+    const {
+      error: deleteError
+    } = await db
       .from("active_games")
       .delete()
       .eq("id", game.id);
 
-    if (deleteError) throw deleteError;
+    if (deleteError) {
+      throw deleteError;
+    }
 
     closeModal();
 
-    showToast(`Game completed · ₹${finalAmount}`);
+    showToast(
+      `Game completed · ₹${finalAmount}`
+    );
 
     await loadActiveGames();
+
   } catch (error) {
-    console.error("Finish game error:", error);
+
+    console.error(
+      "Finish game error:",
+      error
+    );
 
     button.disabled = false;
-    button.textContent = "Complete Game";
+    button.textContent =
+      "Complete Game";
 
-    showToast(error.message || "Could not complete game");
+    showToast(
+      error.message ||
+      "Could not complete game"
+    );
   }
 }
 
@@ -810,24 +1331,53 @@ async function finishGame(game, calculated) {
    AMOUNT CALCULATION
 ========================================================= */
 
-function calculateAmount(tableNumber, durationMinutes, playerCount) {
-  const rate = getTableRate(tableNumber);
+function calculateAmount(
+  tableNumber,
+  durationMinutes,
+  playerCount
+) {
 
-  const billableHours = Math.max(1, durationMinutes / 60);
+  const rate =
+    getTableRate(
+      tableNumber
+    );
 
-  const baseAmount = rate * billableHours;
+  const billableHours =
+    Math.max(
+      1,
+      durationMinutes / 60
+    );
 
-  const extraPlayers = Math.max(0, playerCount - 2);
+  const baseAmount =
+    rate * billableHours;
+
+  const extraPlayers =
+    Math.max(
+      0,
+      playerCount - 2
+    );
 
   const extraCharge =
-    extraPlayers * EXTRA_PLAYER_CHARGE;
+    extraPlayers *
+    EXTRA_PLAYER_CHARGE;
 
-  return Math.round(baseAmount + extraCharge);
+  return Math.round(
+    baseAmount +
+    extraCharge
+  );
 }
-    async function requireLoginForHistory() {
-  const { data } = await db.auth.getSession();
 
-  if (!data.session) {
+/* =========================================================
+   LOGIN PROTECTION
+========================================================= */
+
+async function requireLoginForHistory() {
+
+  const {
+    data: { session }
+  } = await db.auth.getSession();
+
+  if (!session) {
     showLoginModal();
     return;
   }
@@ -835,15 +1385,33 @@ function calculateAmount(tableNumber, durationMinutes, playerCount) {
   openHistoryModal();
 }
 
+/* =========================================================
+   LOGIN MODAL
+========================================================= */
+
 function showLoginModal() {
+
+  /*
+    Mark modal as mandatory.
+    This prevents Escape / outside click
+    from closing the login screen.
+  */
+
+  modal.dataset.loginRequired =
+    "true";
+
   modal.innerHTML = `
     <h2>Staff Login</h2>
 
     <div class="modal-sub">
-      Login required to access game history
+      Login required to access
+      Vantara Snooker Academy
     </div>
 
-    <label class="form-label">Email</label>
+    <label class="form-label">
+      Email
+    </label>
+
     <input
       id="loginEmail"
       class="input"
@@ -852,7 +1420,10 @@ function showLoginModal() {
       autocomplete="email"
     >
 
-    <label class="form-label">Password</label>
+    <label class="form-label">
+      Password
+    </label>
+
     <input
       id="loginPassword"
       class="input"
@@ -862,13 +1433,6 @@ function showLoginModal() {
     >
 
     <div class="modal-actions">
-      <button
-        type="button"
-        class="btn btn-secondary"
-        id="cancelLogin"
-      >
-        Cancel
-      </button>
 
       <button
         type="button"
@@ -877,61 +1441,153 @@ function showLoginModal() {
       >
         Login
       </button>
+
     </div>
   `;
 
   openModal();
 
-  document
-    .getElementById("cancelLogin")
-    .addEventListener("click", closeModal);
+  const emailInput =
+    document.getElementById(
+      "loginEmail"
+    );
 
-  document
-    .getElementById("loginBtn")
-    .addEventListener("click", loginUser);
+  const passwordInput =
+    document.getElementById(
+      "loginPassword"
+    );
+
+  const loginButton =
+    document.getElementById(
+      "loginBtn"
+    );
+
+  loginButton.addEventListener(
+    "click",
+    loginUser
+  );
+
+  passwordInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter"
+      ) {
+        loginUser();
+      }
+
+    }
+  );
+
+  emailInput.focus();
 }
+
+/* =========================================================
+   LOGIN USER
+========================================================= */
 
 async function loginUser() {
-  const email = document
-    .getElementById("loginEmail")
-    .value
-    .trim();
 
-  const password = document
-    .getElementById("loginPassword")
-    .value;
+  const email =
+    document
+      .getElementById(
+        "loginEmail"
+      )
+      .value
+      .trim();
+
+  const password =
+    document
+      .getElementById(
+        "loginPassword"
+      )
+      .value;
 
   if (!email || !password) {
-    showToast("Enter email and password");
+    showToast(
+      "Enter email and password"
+    );
     return;
   }
 
-  const button = document.getElementById("loginBtn");
+  const button =
+    document.getElementById(
+      "loginBtn"
+    );
 
   button.disabled = true;
-  button.textContent = "Logging in...";
+  button.textContent =
+    "Logging in...";
 
-  const { error } = await db.auth.signInWithPassword({
-    email,
-    password
-  });
+  try {
 
-  if (error) {
+    const {
+      data,
+      error
+    } = await db.auth
+      .signInWithPassword({
+        email,
+        password
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data.session) {
+      throw new Error(
+        "Login succeeded but no session was created"
+      );
+    }
+
+    /*
+      Initialize immediately.
+      The auth listener will also see SIGNED_IN,
+      but initializeApp() prevents duplication.
+    */
+
+    await initializeApp();
+
+    modal.dataset.loginRequired =
+      "false";
+
+    closeModal();
+
+    renderTables();
+    await loadActiveGames();
+
+    showToast(
+      "Login successful"
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Login error:",
+      error
+    );
+
     button.disabled = false;
-    button.textContent = "Login";
-    showToast(error.message || "Login failed");
-    return;
+    button.textContent =
+      "Login";
+
+    showToast(
+      error.message ||
+      "Login failed"
+    );
   }
-
-  showToast("Login successful");
-
-  await openHistoryModal();
 }
+
 /* =========================================================
    HISTORY MODAL
 ========================================================= */
 
 async function openHistoryModal() {
+
+  modal.dataset.loginRequired =
+    "false";
+
   modal.innerHTML = `
     <h2>Game History</h2>
 
@@ -940,6 +1596,7 @@ async function openHistoryModal() {
     </div>
 
     <div class="date-selector">
+
       <input
         type="date"
         id="historyDate"
@@ -947,29 +1604,47 @@ async function openHistoryModal() {
         value="${getTodayDate()}"
       >
 
-      <button class="btn btn-primary" id="loadHistoryBtn">
+      <button
+        class="btn btn-primary"
+        id="loadHistoryBtn"
+      >
         Load
       </button>
+
     </div>
 
-    <div id="historyContent" class="empty">
+    <div
+      id="historyContent"
+      class="empty"
+    >
       Loading history...
     </div>
   `;
 
   openModal();
 
-  document.getElementById("loadHistoryBtn").addEventListener(
-    "click",
-    () => {
-      const date =
-        document.getElementById("historyDate").value;
+  document
+    .getElementById(
+      "loadHistoryBtn"
+    )
+    .addEventListener(
+      "click",
+      () => {
 
-      loadHistory(date);
-    }
+        const date =
+          document
+            .getElementById(
+              "historyDate"
+            )
+            .value;
+
+        loadHistory(date);
+      }
+    );
+
+  await loadHistory(
+    getTodayDate()
   );
-
-  await loadHistory(getTodayDate());
 }
 
 /* =========================================================
@@ -977,29 +1652,59 @@ async function openHistoryModal() {
 ========================================================= */
 
 async function loadHistory(date) {
+
   const content =
-    document.getElementById("historyContent");
+    document.getElementById(
+      "historyContent"
+    );
 
   if (!content) return;
 
   content.innerHTML =
-    `<div class="empty">Loading...</div>`;
+    `<div class="empty">
+      Loading...
+    </div>`;
 
   try {
-    const { data, error } = await db
+
+    const {
+      data,
+      error
+    } = await db
       .from("game_history")
       .select("*")
-      .eq("game_date", date)
-      .order("created_at", { ascending: false });
+      .eq(
+        "game_date",
+        date
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
-    renderHistory(data || [], content, date);
+    renderHistory(
+      data || [],
+      content,
+      date
+    );
+
   } catch (error) {
-    console.error("History error:", error);
+
+    console.error(
+      "History error:",
+      error
+    );
 
     content.innerHTML =
-      `<div class="empty">Could not load history.</div>`;
+      `<div class="empty">
+        Could not load history.
+      </div>`;
   }
 }
 
@@ -1007,65 +1712,100 @@ async function loadHistory(date) {
    RENDER HISTORY
 ========================================================= */
 
-function renderHistory(records, container, date) {
-  const total = records.reduce(
-    (sum, record) =>
-      sum + Number(record.amount || 0),
-    0
-  );
+function renderHistory(
+  records,
+  container,
+  date
+) {
 
-  const games = records.length;
-
-  const cash = records
-    .filter(
-      r =>
-        String(r.payment).toLowerCase() === "cash"
-    )
-    .reduce(
-      (sum, r) => sum + Number(r.amount || 0),
+  const total =
+    records.reduce(
+      (sum, record) =>
+        sum +
+        Number(
+          record.amount || 0
+        ),
       0
     );
 
-  const online = records
-    .filter(
-      r =>
-        String(r.payment).toLowerCase() === "online"
-    )
-    .reduce(
-      (sum, r) => sum + Number(r.amount || 0),
-      0
-    );
+  const games =
+    records.length;
+
+  const cash =
+    records
+      .filter(
+        r =>
+          String(
+            r.payment
+          ).toLowerCase() ===
+          "cash"
+      )
+      .reduce(
+        (sum, r) =>
+          sum +
+          Number(
+            r.amount || 0
+          ),
+        0
+      );
+
+  const online =
+    records
+      .filter(
+        r =>
+          String(
+            r.payment
+          ).toLowerCase() ===
+          "online"
+      )
+      .reduce(
+        (sum, r) =>
+          sum +
+          Number(
+            r.amount || 0
+          ),
+        0
+      );
 
   if (records.length === 0) {
+
     container.innerHTML = `
       <div class="history-summary">
+
         <div class="stat-card">
           <span>Games</span>
           <strong>0</strong>
         </div>
+
         <div class="stat-card">
           <span>Collection</span>
           <strong>₹0</strong>
         </div>
+
         <div class="stat-card">
           <span>Cash</span>
           <strong>₹0</strong>
         </div>
+
         <div class="stat-card">
           <span>Online</span>
           <strong>₹0</strong>
         </div>
+
       </div>
 
       <div class="empty">
-        No games found for ${escapeHTML(date)}.
+        No games found for
+        ${escapeHTML(date)}.
       </div>
     `;
+
     return;
   }
 
   container.innerHTML = `
     <div class="history-summary">
+
       <div class="stat-card">
         <span>Games</span>
         <strong>${games}</strong>
@@ -1085,11 +1825,15 @@ function renderHistory(records, container, date) {
         <span>Online</span>
         <strong>₹${online}</strong>
       </div>
+
     </div>
 
     <div class="history-wrap">
+
       <table class="history-table">
+
         <thead>
+
           <tr>
             <th>Time</th>
             <th>Table</th>
@@ -1099,74 +1843,163 @@ function renderHistory(records, container, date) {
             <th>Amount</th>
             <th>Payment</th>
           </tr>
+
         </thead>
 
         <tbody>
+
           ${records.map(record => {
-            const players = normalizePlayers(record.players);
-            const duration = calculateRecordDuration(record);
+
+            const players =
+              normalizePlayers(
+                record.players
+              );
+
+            const duration =
+              calculateRecordDuration(
+                record
+              );
 
             return `
               <tr>
-                <td>${formatTimeDisplay(record.start_time)}</td>
-                <td>Table ${escapeHTML(record.table_number)}</td>
-                <td>${escapeHTML(record.game || "")}</td>
-                <td>${escapeHTML(players.join(", "))}</td>
-                <td>${duration}</td>
-                <td>₹${Number(record.amount || 0)}</td>
-                <td>${escapeHTML(record.payment || "")}</td>
+
+                <td>
+                  ${formatTimeDisplay(
+                    record.start_time
+                  )}
+                </td>
+
+                <td>
+                  Table
+                  ${escapeHTML(
+                    record.table_number
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHTML(
+                    record.game || ""
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHTML(
+                    players.join(", ")
+                  )}
+                </td>
+
+                <td>
+                  ${duration}
+                </td>
+
+                <td>
+                  ₹${Number(
+                    record.amount || 0
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHTML(
+                    record.payment || ""
+                  )}
+                </td>
+
               </tr>
             `;
+
           }).join("")}
+
         </tbody>
+
       </table>
+
     </div>
 
     <div class="report-actions">
-      <button class="btn btn-secondary" id="closeHistoryBtn">
+
+      <button
+        class="btn btn-secondary"
+        id="closeHistoryBtn"
+      >
         Close
       </button>
 
-      <button class="btn btn-primary" id="exportHistoryBtn">
+      <button
+        class="btn btn-primary"
+        id="exportHistoryBtn"
+      >
         Export CSV
       </button>
+
     </div>
   `;
 
-  document.getElementById("closeHistoryBtn").addEventListener(
-    "click",
-    closeModal
-  );
+  document
+    .getElementById(
+      "closeHistoryBtn"
+    )
+    .addEventListener(
+      "click",
+      closeModal
+    );
 
-  document.getElementById("exportHistoryBtn").addEventListener(
-    "click",
-    () => exportCSV(records, date)
-  );
+  document
+    .getElementById(
+      "exportHistoryBtn"
+    )
+    .addEventListener(
+      "click",
+      () =>
+        exportCSV(
+          records,
+          date
+        )
+    );
 }
 
 /* =========================================================
    RECORD DURATION
 ========================================================= */
 
-function calculateRecordDuration(record) {
-  if (!record.start_time || !record.end_time) {
+function calculateRecordDuration(
+  record
+) {
+
+  if (
+    !record.start_time ||
+    !record.end_time
+  ) {
     return "-";
   }
 
-  const start = parseTimeToMinutes(record.start_time);
-  const end = parseTimeToMinutes(record.end_time);
+  const start =
+    parseTimeToMinutes(
+      record.start_time
+    );
 
-  if (start === null || end === null) {
+  const end =
+    parseTimeToMinutes(
+      record.end_time
+    );
+
+  if (
+    start === null ||
+    end === null
+  ) {
     return "-";
   }
 
-  let difference = end - start;
+  let difference =
+    end - start;
 
   if (difference < 0) {
-    difference += 24 * 60;
+    difference +=
+      24 * 60;
   }
 
-  return formatDuration(difference);
+  return formatDuration(
+    difference
+  );
 }
 
 /* =========================================================
@@ -1174,35 +2007,68 @@ function calculateRecordDuration(record) {
 ========================================================= */
 
 async function updateStats() {
-  const playing = activeGames.length;
-  const available = TOTAL_TABLES - playing;
 
-  availableCount.textContent = available;
-  playingCount.textContent = playing;
+  const playing =
+    activeGames.length;
+
+  const available =
+    TOTAL_TABLES -
+    playing;
+
+  availableCount.textContent =
+    available;
+
+  playingCount.textContent =
+    playing;
 
   try {
-    const today = getTodayDate();
 
-    const { data, error } = await db
+    const today =
+      getTodayDate();
+
+    const {
+      data,
+      error
+    } = await db
       .from("game_history")
       .select("amount")
-      .eq("game_date", today);
+      .eq(
+        "game_date",
+        today
+      );
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
-    const total = (data || []).reduce(
-      (sum, row) =>
-        sum + Number(row.amount || 0),
-      0
+    const total =
+      (data || []).reduce(
+        (sum, row) =>
+          sum +
+          Number(
+            row.amount || 0
+          ),
+        0
+      );
+
+    gamesCount.textContent =
+      data?.length || 0;
+
+    collection.textContent =
+      `₹${total}`;
+
+  } catch (error) {
+
+    console.error(
+      "Stats error:",
+      error
     );
 
-    gamesCount.textContent = data?.length || 0;
-    collection.textContent = `₹${total}`;
-  } catch (error) {
-    console.error("Stats error:", error);
+    gamesCount.textContent =
+      "0";
 
-    gamesCount.textContent = "0";
-    collection.textContent = "₹0";
+    collection.textContent =
+      "₹0";
   }
 }
 
@@ -1211,11 +2077,28 @@ async function updateStats() {
 ========================================================= */
 
 function openModal() {
-  modalBackdrop.classList.add("open");
+  modalBackdrop.classList.add(
+    "open"
+  );
 }
 
 function closeModal() {
-  modalBackdrop.classList.remove("open");
+
+  /*
+    Never allow mandatory login
+    modal to be closed.
+  */
+
+  if (
+    modal.dataset.loginRequired ===
+    "true"
+  ) {
+    return;
+  }
+
+  modalBackdrop.classList.remove(
+    "open"
+  );
 }
 
 /* =========================================================
@@ -1225,49 +2108,99 @@ function closeModal() {
 let toastTimer = null;
 
 function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add("show");
 
-  clearTimeout(toastTimer);
+  toast.textContent =
+    message;
 
-  toastTimer = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 3000);
+  toast.classList.add(
+    "show"
+  );
+
+  clearTimeout(
+    toastTimer
+  );
+
+  toastTimer =
+    setTimeout(
+      () => {
+        toast.classList.remove(
+          "show"
+        );
+      },
+      3000
+    );
 }
 
 /* =========================================================
    TIME HELPERS
 ========================================================= */
 
-function getElapsedTime(startedAt) {
-  const minutes = getDurationMinutes(startedAt);
-  return formatDuration(minutes);
+function getElapsedTime(
+  startedAt
+) {
+
+  const minutes =
+    getDurationMinutes(
+      startedAt
+    );
+
+  return formatDuration(
+    minutes
+  );
 }
 
-function getDurationMinutes(startedAt) {
-  const start = new Date(startedAt);
-  const now = new Date();
+function getDurationMinutes(
+  startedAt
+) {
+
+  const start =
+    new Date(
+      startedAt
+    );
+
+  const now =
+    new Date();
 
   const milliseconds =
-    now.getTime() - start.getTime();
+    now.getTime() -
+    start.getTime();
 
   return Math.max(
     0,
-    Math.floor(milliseconds / 60000)
+    Math.floor(
+      milliseconds /
+      60000
+    )
   );
 }
 
-function formatDuration(minutes) {
-  minutes = Math.max(
-    0,
-    Math.floor(Number(minutes) || 0)
-  );
+function formatDuration(
+  minutes
+) {
 
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+  minutes =
+    Math.max(
+      0,
+      Math.floor(
+        Number(minutes) || 0
+      )
+    );
+
+  const hours =
+    Math.floor(
+      minutes / 60
+    );
+
+  const mins =
+    minutes % 60;
 
   if (hours > 0) {
-    return `${hours}h ${String(mins).padStart(2, "0")}m`;
+    return `${hours}h ${String(
+      mins
+    ).padStart(
+      2,
+      "0"
+    )}m`;
   }
 
   return `${mins}m`;
@@ -1278,56 +2211,120 @@ function formatDuration(minutes) {
 ========================================================= */
 
 function getTodayDate() {
-  return formatDateForDB(new Date());
+  return formatDateForDB(
+    new Date()
+  );
 }
 
-function formatDateForDB(date) {
-  const year = date.getFullYear();
+function formatDateForDB(
+  date
+) {
 
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
+  const year =
+    date.getFullYear();
 
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      "0"
+    );
 
   return `${year}-${month}-${day}`;
 }
 
-function formatTimeForDB(date) {
+function formatTimeForDB(
+  date
+) {
+
   return [
-    String(date.getHours()).padStart(2, "0"),
-    String(date.getMinutes()).padStart(2, "0"),
-    String(date.getSeconds()).padStart(2, "0")
+    String(
+      date.getHours()
+    ).padStart(
+      2,
+      "0"
+    ),
+
+    String(
+      date.getMinutes()
+    ).padStart(
+      2,
+      "0"
+    ),
+
+    String(
+      date.getSeconds()
+    ).padStart(
+      2,
+      "0"
+    )
+
   ].join(":");
 }
 
-function formatTimeDisplay(value) {
+function formatTimeDisplay(
+  value
+) {
+
   if (!value) return "-";
 
-  const parts = String(value).split(":");
+  const parts =
+    String(value)
+      .split(":");
 
-  if (parts.length < 2) return value;
+  if (
+    parts.length < 2
+  ) {
+    return value;
+  }
 
-  const hours = Number(parts[0]);
-  const minutes = parts[1];
+  const hours =
+    Number(parts[0]);
 
-  const suffix = hours >= 12 ? "PM" : "AM";
-  const displayHour = hours % 12 || 12;
+  const minutes =
+    parts[1];
+
+  const suffix =
+    hours >= 12
+      ? "PM"
+      : "AM";
+
+  const displayHour =
+    hours % 12 || 12;
 
   return `${displayHour}:${minutes} ${suffix}`;
 }
 
-function parseTimeToMinutes(value) {
+function parseTimeToMinutes(
+  value
+) {
+
   if (!value) return null;
 
-  const parts = String(value).split(":");
+  const parts =
+    String(value)
+      .split(":");
 
-  if (parts.length < 2) return null;
+  if (
+    parts.length < 2
+  ) {
+    return null;
+  }
 
-  const hours = Number(parts[0]);
-  const minutes = Number(parts[1]);
+  const hours =
+    Number(parts[0]);
+
+  const minutes =
+    Number(parts[1]);
 
   if (
     !Number.isFinite(hours) ||
@@ -1336,31 +2333,62 @@ function parseTimeToMinutes(value) {
     return null;
   }
 
-  return hours * 60 + minutes;
+  return (
+    hours * 60 +
+    minutes
+  );
 }
 
 /* =========================================================
    NORMALIZE PLAYERS
 ========================================================= */
 
-function normalizePlayers(players) {
+function normalizePlayers(
+  players
+) {
+
   if (Array.isArray(players)) {
+
     return players
-      .map(player => String(player || "").trim())
+      .map(
+        player =>
+          String(
+            player || ""
+          ).trim()
+      )
       .filter(Boolean);
   }
 
-  if (typeof players === "string") {
-    try {
-      const parsed = JSON.parse(players);
+  if (
+    typeof players ===
+    "string"
+  ) {
 
-      if (Array.isArray(parsed)) {
-        return normalizePlayers(parsed);
+    try {
+
+      const parsed =
+        JSON.parse(
+          players
+        );
+
+      if (
+        Array.isArray(
+          parsed
+        )
+      ) {
+        return normalizePlayers(
+          parsed
+        );
       }
+
     } catch {
+
       return players
         .split(",")
-        .map(player => player.trim())
+        .map(
+          player =>
+            player.trim()
+        )
         .filter(Boolean);
     }
   }
@@ -1372,7 +2400,11 @@ function normalizePlayers(players) {
    CSV EXPORT
 ========================================================= */
 
-function exportCSV(records, date) {
+function exportCSV(
+  records,
+  date
+) {
+
   const headers = [
     "Date",
     "Start Time",
@@ -1386,67 +2418,132 @@ function exportCSV(records, date) {
     "Payment"
   ];
 
-  const rows = records.map(record => [
-    date,
-    record.start_time || "",
-    record.end_time || "",
-    record.table_number || "",
-    record.game || "",
-    normalizePlayers(record.players).join(" | "),
-    record.player_count || "",
-    record.amount || 0,
-    record.calculated_amount || 0,
-    record.payment || ""
-  ]);
+  const rows =
+    records.map(
+      record => [
+        date,
+        record.start_time ||
+          "",
+        record.end_time ||
+          "",
+        record.table_number ||
+          "",
+        record.game ||
+          "",
+        normalizePlayers(
+          record.players
+        ).join(" | "),
+        record.player_count ||
+          "",
+        record.amount ||
+          0,
+        record.calculated_amount ||
+          0,
+        record.payment ||
+          ""
+      ]
+    );
 
   const csv = [
     headers,
     ...rows
   ]
-    .map(row =>
-      row
-        .map(value =>
-          `"${String(value).replace(/"/g, '""')}"`
-        )
-        .join(",")
+    .map(
+      row =>
+        row
+          .map(
+            value =>
+              `"${String(
+                value
+              ).replace(
+                /"/g,
+                '""'
+              )}"`
+          )
+          .join(",")
     )
     .join("\n");
 
-  const blob = new Blob(
-    [csv],
-    { type: "text/csv;charset=utf-8;" }
-  );
+  const blob =
+    new Blob(
+      [csv],
+      {
+        type:
+          "text/csv;charset=utf-8;"
+      }
+    );
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+  const link =
+    document.createElement(
+      "a"
+    );
 
   link.href = url;
-  link.download = `vantara-history-${date}.csv`;
 
-  document.body.appendChild(link);
+  link.download =
+    `vantara-history-${date}.csv`;
+
+  document.body.appendChild(
+    link
+  );
+
   link.click();
+
   link.remove();
 
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(
+    url
+  );
 
-  showToast("CSV exported");
+  showToast(
+    "CSV exported"
+  );
 }
 
 /* =========================================================
    SECURITY / HTML HELPERS
 ========================================================= */
 
-function escapeHTML(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function escapeHTML(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
-function escapeAttribute(value) {
-  return escapeHTML(value);
+function escapeAttribute(
+  value
+) {
+  return escapeHTML(
+    value
+  );
 }
 
 /* =========================================================
@@ -1454,5 +2551,11 @@ function escapeAttribute(value) {
 ========================================================= */
 
 setInterval(() => {
+
+  if (!appInitialized) {
+    return;
+  }
+
   updateStats();
+
 }, 30000);
