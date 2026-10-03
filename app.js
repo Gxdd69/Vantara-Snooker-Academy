@@ -99,7 +99,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 ========================================================= */
 
 function setupEvents() {
-  historyBtn.addEventListener("click", openHistoryModal);
+  historyBtn.addEventListener("click", requireLoginForHistory);
 
   modalBackdrop.addEventListener("click", (event) => {
     if (event.target === modalBackdrop) {
@@ -824,7 +824,109 @@ function calculateAmount(tableNumber, durationMinutes, playerCount) {
 
   return Math.round(baseAmount + extraCharge);
 }
+    async function requireLoginForHistory() {
+  const { data } = await db.auth.getSession();
 
+  if (!data.session) {
+    showLoginModal();
+    return;
+  }
+
+  openHistoryModal();
+}
+
+function showLoginModal() {
+  modal.innerHTML = `
+    <h2>Staff Login</h2>
+
+    <div class="modal-sub">
+      Login required to access game history
+    </div>
+
+    <label class="form-label">Email</label>
+    <input
+      id="loginEmail"
+      class="input"
+      type="email"
+      placeholder="Enter email"
+      autocomplete="email"
+    >
+
+    <label class="form-label">Password</label>
+    <input
+      id="loginPassword"
+      class="input"
+      type="password"
+      placeholder="Enter password"
+      autocomplete="current-password"
+    >
+
+    <div class="modal-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        id="cancelLogin"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="loginBtn"
+      >
+        Login
+      </button>
+    </div>
+  `;
+
+  openModal();
+
+  document
+    .getElementById("cancelLogin")
+    .addEventListener("click", closeModal);
+
+  document
+    .getElementById("loginBtn")
+    .addEventListener("click", loginUser);
+}
+
+async function loginUser() {
+  const email = document
+    .getElementById("loginEmail")
+    .value
+    .trim();
+
+  const password = document
+    .getElementById("loginPassword")
+    .value;
+
+  if (!email || !password) {
+    showToast("Enter email and password");
+    return;
+  }
+
+  const button = document.getElementById("loginBtn");
+
+  button.disabled = true;
+  button.textContent = "Logging in...";
+
+  const { error } = await db.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    button.disabled = false;
+    button.textContent = "Login";
+    showToast(error.message || "Login failed");
+    return;
+  }
+
+  showToast("Login successful");
+
+  await openHistoryModal();
+}
 /* =========================================================
    HISTORY MODAL
 ========================================================= */
