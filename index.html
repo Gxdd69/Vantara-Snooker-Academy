@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Vantara Snooker Academy</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,11 +57,11 @@
 
         <button
           id="unpaidBtn"
-          class="history-btn unpaid-header-btn"
+          class="history-btn"
           type="button"
         >
           Unpaid
-          <span id="unpaidBadge" class="unpaid-badge">0</span>
+          <span id="unpaidCount">0</span>
         </button>
 
         <button
@@ -104,67 +103,23 @@
       <section class="stats-grid">
 
         <div class="stat-card">
-
-          <span>
-            AVAILABLE
-          </span>
-
-          <strong id="availableCount">
-            0
-          </strong>
-
+          <span>AVAILABLE</span>
+          <strong id="availableCount">0</strong>
         </div>
-
 
         <div class="stat-card">
-
-          <span>
-            PLAYING
-          </span>
-
-          <strong id="playingCount">
-            0
-          </strong>
-
+          <span>PLAYING</span>
+          <strong id="playingCount">0</strong>
         </div>
-
 
         <div class="stat-card">
-
-          <span>
-            TODAY'S GAMES
-          </span>
-
-          <strong id="gamesCount">
-            0
-          </strong>
-
+          <span>TODAY'S GAMES</span>
+          <strong id="gamesCount">0</strong>
         </div>
-
 
         <div class="stat-card">
-
-          <span>
-            COLLECTION
-          </span>
-
-          <strong id="collection">
-            ₹0
-          </strong>
-
-        </div>
-
-
-        <div class="stat-card unpaid-stat-card">
-
-          <span>
-            UNPAID
-          </span>
-
-          <strong id="unpaidCount">
-            0
-          </strong>
-
+          <span>COLLECTION</span>
+          <strong id="collection">₹0</strong>
         </div>
 
       </section>
@@ -216,8 +171,6 @@
   </div>
 
 
-  <!-- MAIN MODAL -->
-
   <div
     id="modalBackdrop"
     class="modal-backdrop"
@@ -232,8 +185,6 @@
 
   </div>
 
-
-  <!-- TOAST -->
 
   <div
     id="toast"
