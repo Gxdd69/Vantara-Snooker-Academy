@@ -9,199 +9,198 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
-    rel="stylesheet"
-  >
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <div class="app-shell">
+<div class="app-shell">
 
-    <!-- TOP BAR -->
-    <header class="topbar">
+  <!-- TOP BAR -->
+  <header class="topbar">
 
-     <div class="brand">
-  <img src="vantara-logo.png" class="brand-logo" alt="Vantara Snooker Academy">
-</div>
+    <div class="brand">
 
+      <div class="brand-mark">
+        <img src="vantara-logo.png" alt="Vantara Snooker Academy">
       </div>
 
-
-      <div class="top-actions">
-
-        <div
-          id="connectionStatus"
-          class="connection-status offline"
-        >
-          <span></span>
-          Connecting
-        </div>
-
-        <div
-          id="clock"
-          class="clock"
-        >
-          --:--:--
-        </div>
-
-
-        <button
-          id="unpaidBtn"
-          class="header-btn unpaid-header-btn"
-          type="button"
-        >
-          Unpaid
-          <span
-            id="unpaidBadge"
-            class="unpaid-badge"
-          >
-            0
-          </span>
-        </button>
-
-
-        <button
-          id="historyBtn"
-          class="header-btn"
-          type="button"
-        >
-          History
-        </button>
-
+      <div>
+        <div class="brand-name">Vantara</div>
+        <div class="brand-sub">SNOOKER ACADEMY</div>
       </div>
 
-    </header>
+    </div>
+
+    <div class="top-actions">
+
+      <div id="connectionStatus" class="connection-status offline">
+        <span></span> Connecting
+      </div>
+
+      <div id="clock" class="clock">--:--:--</div>
+
+      <button id="unpaidBtn" class="history-btn unpaid-top">
+        Unpaid <b id="unpaidCount">0</b>
+      </button>
+
+      <button id="historyBtn" class="history-btn">
+        History
+      </button>
+
+    </div>
+
+  </header>
 
 
-    <!-- MAIN -->
-    <main class="main-content">
+  <!-- MAIN -->
+  <main class="main-content">
 
-      <section class="hero">
+    <section class="hero">
+
+      <div>
+        <div class="eyebrow">RECEPTION DESK</div>
+
+        <h1>Table Floor</h1>
+
+        <p>Live table management</p>
+      </div>
+
+    </section>
+
+
+    <!-- STATS -->
+    <section class="stats-grid">
+
+      <div class="stat-card">
+        <span>AVAILABLE</span>
+        <strong id="availableCount">0</strong>
+      </div>
+
+      <div class="stat-card">
+        <span>PLAYING</span>
+        <strong id="playingCount">0</strong>
+      </div>
+
+      <div class="stat-card">
+        <span>TODAY'S GAMES</span>
+        <strong id="gamesCount">0</strong>
+      </div>
+
+      <div class="stat-card">
+        <span>COLLECTION</span>
+        <strong id="collection">₹0</strong>
+      </div>
+
+    </section>
+
+
+    <!-- TABLES -->
+    <section>
+
+      <div class="section-heading">
 
         <div>
+          <div class="eyebrow">LIVE FLOOR</div>
+          <h2>Tables</h2>
+        </div>
 
-          <div class="eyebrow">
-            RECEPTION DESK
-          </div>
+        <div class="legend">
 
-          <h1>
-            Table Floor
-          </h1>
+          <span>
+            <i class="legend-dot available"></i>
+            Available
+          </span>
 
-          <p>
-            Live table management
-          </p>
+          <span>
+            <i class="legend-dot playing"></i>
+            Playing
+          </span>
 
         </div>
 
-      </section>
+      </div>
+
+      <div id="floorGrid" class="floor-grid"></div>
+
+    </section>
+
+  </main>
+
+</div>
 
 
-      <!-- STATS -->
-      <section class="stats-grid">
+<!-- GENERAL MODAL -->
+<div id="modalBackdrop" class="modal-backdrop">
 
-        <div class="stat-card">
-          <span>AVAILABLE</span>
-          <strong id="availableCount">0</strong>
-        </div>
+  <div id="modal" class="modal" role="dialog" aria-modal="true"></div>
 
-        <div class="stat-card">
-          <span>PLAYING</span>
-          <strong id="playingCount">0</strong>
-        </div>
-
-        <div class="stat-card">
-          <span>TODAY'S GAMES</span>
-          <strong id="gamesCount">0</strong>
-        </div>
-
-        <div class="stat-card">
-          <span>COLLECTION</span>
-          <strong id="collection">₹0</strong>
-        </div>
-
-      </section>
+</div>
 
 
-      <!-- TABLES -->
-      <section>
-
-        <div class="section-heading">
-
-          <div>
-
-            <div class="eyebrow">
-              LIVE FLOOR
-            </div>
-
-            <h2>
-              Tables
-            </h2>
-
-          </div>
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
 
 
-          <div class="legend">
+<!-- OWNER LOGIN -->
+<div id="authModal" class="modal-backdrop">
 
-            <span>
-              <i class="legend-dot available"></i>
-              Available
-            </span>
+  <div class="modal auth-modal">
 
-            <span>
-              <i class="legend-dot playing"></i>
-              Playing
-            </span>
+    <button id="closeAuthBtn" class="modal-close" type="button">
+      ×
+    </button>
 
-          </div>
+    <div class="auth-logo">V</div>
 
-        </div>
+    <h2>Owner Login</h2>
 
+    <p class="modal-sub">
+      Vantara Snooker Academy
+    </p>
 
-        <div
-          id="floorGrid"
-          class="floor-grid"
-        ></div>
+    <form id="authForm">
 
-      </section>
+      <input
+        id="authEmail"
+        class="input"
+        type="email"
+        placeholder="Owner email"
+        autocomplete="email"
+        required
+      >
 
-    </main>
+      <input
+        id="authPassword"
+        class="input"
+        type="password"
+        placeholder="Password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button
+        id="authLoginBtn"
+        class="btn btn-primary"
+        type="submit"
+      >
+        Login
+      </button>
+
+      <div id="authMessage" class="auth-message"></div>
+
+    </form>
 
   </div>
 
-
-  <!-- MAIN MODAL -->
-  <div
-    id="modalBackdrop"
-    class="modal-backdrop"
-  >
-
-    <div
-      id="modal"
-      class="modal"
-      role="dialog"
-      aria-modal="true"
-    ></div>
-
-  </div>
+</div>
 
 
-  <!-- TOAST -->
-  <div
-    id="toast"
-    class="toast"
-  ></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-
-  <!-- SUPABASE -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- APP -->
-  <script src="app.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
