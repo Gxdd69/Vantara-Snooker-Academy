@@ -3571,62 +3571,30 @@ async function markGameAsPaid(
    RECORD DURATION
 ========================================================= */
 
-function calculateRecordDuration(
-  record
-) {
-
-  if (
-    !record.start_time ||
-    !record.end_time
-  ) {
-
+function calculateRecordDuration(record) {
+  if (!record.start_time || !record.end_time) {
     return "-";
-
   }
 
-
-  const start =
-    parseTimeToMinutes(
-      record.start_time
-    );
-
-
-  const end =
-    parseTimeToMinutes(
-      record.end_time
-    );
-
+  const start = new Date(record.start_time);
+  const end = new Date(record.end_time);
 
   if (
-    start === null ||
-    end === null
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime())
   ) {
-
     return "-";
-
   }
 
-
-  let difference =
-    end -
-    start;
-
-
-  if (
-    difference < 0
-  ) {
-
-    difference +=
-      24 * 60;
-
-  }
-
-
-  return formatDuration(
-    difference
+  const difference = Math.max(
+    0,
+    Math.floor(
+      (end.getTime() - start.getTime()) / 60000
+    )
   );
-}
 
+  return formatDuration(difference);
+}
 
 /* =========================================================
    STATS
