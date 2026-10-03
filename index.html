@@ -19,9 +19,6 @@
 
 <body>
 
-  <div class="ambient ambient-a"></div>
-  <div class="ambient ambient-b"></div>
-
   <div class="app-shell">
 
     <!-- TOP BAR -->
@@ -30,28 +27,60 @@
       <div class="brand">
 
         <div class="brand-mark">
-          <img src="logo.png" alt="Vantara Logo">
+          V
         </div>
 
         <div>
-          <div class="brand-name">Vantara</div>
-          <div class="brand-sub">SNOOKER ACADEMY</div>
+          <div class="brand-name">
+            Vantara
+          </div>
+
+          <div class="brand-sub">
+            SNOOKER ACADEMY
+          </div>
         </div>
 
       </div>
 
+
       <div class="top-actions">
 
-        <div id="connectionStatus" class="connection-status offline">
+        <div
+          id="connectionStatus"
+          class="connection-status offline"
+        >
           <span></span>
           Connecting
         </div>
 
-        <div id="clock" class="clock">
+        <div
+          id="clock"
+          class="clock"
+        >
           --:--:--
         </div>
 
-        <button id="historyBtn" class="history-btn">
+
+        <button
+          id="unpaidBtn"
+          class="header-btn unpaid-header-btn"
+          type="button"
+        >
+          Unpaid
+          <span
+            id="unpaidBadge"
+            class="unpaid-badge"
+          >
+            0
+          </span>
+        </button>
+
+
+        <button
+          id="historyBtn"
+          class="header-btn"
+          type="button"
+        >
           History
         </button>
 
@@ -65,17 +94,21 @@
 
       <section class="hero">
 
-        <div class="eyebrow">
-          RECEPTION DESK
+        <div>
+
+          <div class="eyebrow">
+            RECEPTION DESK
+          </div>
+
+          <h1>
+            Table Floor
+          </h1>
+
+          <p>
+            Live table management
+          </p>
+
         </div>
-
-        <h1>
-          Table Floor
-        </h1>
-
-        <p>
-          Live table management
-        </p>
 
       </section>
 
@@ -85,7 +118,7 @@
 
         <div class="stat-card">
           <span>AVAILABLE</span>
-          <strong id="availableCount">12</strong>
+          <strong id="availableCount">0</strong>
         </div>
 
         <div class="stat-card">
@@ -123,6 +156,7 @@
 
           </div>
 
+
           <div class="legend">
 
             <span>
@@ -139,7 +173,11 @@
 
         </div>
 
-        <div id="floorGrid" class="floor-grid"></div>
+
+        <div
+          id="floorGrid"
+          class="floor-grid"
+        ></div>
 
       </section>
 
@@ -148,8 +186,11 @@
   </div>
 
 
-  <!-- GENERAL MODAL -->
-  <div id="modalBackdrop" class="modal-backdrop">
+  <!-- MAIN MODAL -->
+  <div
+    id="modalBackdrop"
+    class="modal-backdrop"
+  >
 
     <div
       id="modal"
@@ -162,7 +203,10 @@
 
 
   <!-- TOAST -->
-  <div id="toast" class="toast"></div>
+  <div
+    id="toast"
+    class="toast"
+  ></div>
 
 
   <!-- SUPABASE -->
