@@ -21,10 +21,6 @@
   --felt-dark: #08372c;
 }
 
-html {
-  background: var(--bg);
-}
-
 body {
   min-height: 100vh;
 
@@ -43,14 +39,12 @@ body {
 
   color: var(--text);
 
-  font-family:
-    Inter,
-    system-ui,
-    sans-serif;
+  font-family: Inter, system-ui, sans-serif;
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -58,25 +52,24 @@ button {
   cursor: pointer;
 }
 
-button:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
+
+/* =========================
+   APP
+========================= */
 
 .app-shell {
   min-height: 100vh;
 }
 
 
-/* =========================================================
-   TOP BAR
-========================================================= */
+/* =========================
+   TOPBAR
+========================= */
 
 .topbar {
-  min-height: 78px;
+  height: 78px;
 
-  border-bottom:
-    1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 
   display: flex;
   align-items: center;
@@ -84,11 +77,9 @@ button:disabled {
 
   padding: 0 34px;
 
-  background:
-    rgba(8, 9, 9, .94);
+  background: rgba(8, 9, 9, .92);
 
-  backdrop-filter:
-    blur(14px);
+  backdrop-filter: blur(14px);
 
   position: sticky;
   top: 0;
@@ -96,38 +87,36 @@ button:disabled {
   z-index: 10;
 }
 
-.brand {
+.brand,
+.top-actions,
+.section-heading,
+.table-header,
+.table-bottom,
+.playing-meta,
+.modal-actions,
+.date-selector,
+.report-actions {
   display: flex;
   align-items: center;
 }
 
-.brand-logo {
-  width: 190px;
-  height: 58px;
-  object-fit: contain;
-  object-position: left center;
-  display: block;
+.brand {
+  gap: 13px;
 }
+
+
+/* LOGO */
 
 .brand-mark {
   width: 42px;
   height: 42px;
 
-  border:
-    1px solid #6d5a2e;
+  border: 1px solid #6d5a2e;
 
   border-radius: 13px;
 
   display: grid;
   place-items: center;
-
-  color: var(--gold);
-
-  font-family:
-    "Playfair Display",
-    serif;
-
-  font-size: 22px;
 
   background:
     linear-gradient(
@@ -135,14 +124,27 @@ button:disabled {
       #17150e,
       #0d0d0c
     );
+
+  overflow: hidden;
+
+  flex-shrink: 0;
 }
 
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+
+  display: block;
+}
+
+
 .brand-name {
-  font-family:
-    "Playfair Display",
-    serif;
+  font-family: "Playfair Display", serif;
 
   font-weight: 700;
+
   font-size: 19px;
 }
 
@@ -156,23 +158,19 @@ button:disabled {
   margin-top: 2px;
 }
 
-.top-actions {
-  display: flex;
-  align-items: center;
 
-  gap: 10px;
+.top-actions {
+  gap: 12px;
 }
 
 .connection-status {
   font-size: 12px;
+
   color: var(--muted);
 
   display: flex;
   align-items: center;
-
   gap: 6px;
-
-  margin-right: 5px;
 }
 
 .connection-status span,
@@ -187,96 +185,68 @@ button:disabled {
   background: var(--red);
 
   box-shadow:
-    0 0 9px
-    rgba(227,109,109,.5);
+    0 0 9px rgba(227,109,109,.5);
 }
 
-.connection-status.online span,
-.status-dot {
+.connection-status.online span {
   background: var(--green);
 
   box-shadow:
-    0 0 9px
-    rgba(88,200,137,.55);
+    0 0 9px rgba(88,200,137,.55);
 }
 
 .clock {
   color: #c7cbc8;
 
-  font-variant-numeric:
-    tabular-nums;
-
-  margin: 0 8px;
+  font-variant-numeric: tabular-nums;
 }
 
-.header-btn {
-  border:
-    1px solid var(--border);
+.history-btn,
+.btn {
+  border: 1px solid var(--border);
 
-  border-radius: 10px;
+  border-radius: 11px;
 
-  padding:
-    9px 13px;
+  padding: 10px 16px;
 
   color: var(--text);
 
   background: #151817;
 
   transition: .2s ease;
-
-  display: inline-flex;
-  align-items: center;
-
-  gap: 7px;
 }
 
-.header-btn:hover {
+.history-btn:hover,
+.btn-secondary:hover {
   border-color: #454b49;
+
   background: #1a1e1d;
 }
 
-.unpaid-header-btn {
-  border-color:
-    rgba(227,109,109,.25);
+.unpaid-top {
+  border-color: #453535;
 }
 
-.unpaid-badge {
-  min-width: 20px;
-  height: 20px;
-
-  padding: 0 5px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 20px;
-
-  background:
-    rgba(227,109,109,.13);
+.unpaid-top b {
+  margin-left: 5px;
 
   color: var(--red);
-
-  font-size: 10px;
-  font-weight: 700;
 }
 
 
-/* =========================================================
+/* =========================
    MAIN
-========================================================= */
+========================= */
 
 .main-content {
-  width:
-    min(
-      1440px,
-      calc(100% - 48px)
-    );
+  width: min(
+    1440px,
+    calc(100% - 48px)
+  );
 
   margin: 0 auto;
 
-  padding:
-    54px 0 70px;
+  padding: 54px 0 70px;
 }
 
 .hero {
@@ -298,31 +268,29 @@ button:disabled {
 .hero h1,
 .section-heading h2,
 .modal h2 {
-  font-family:
-    "Playfair Display",
-    serif;
+  font-family: "Playfair Display", serif;
 }
 
 .hero h1 {
-  font-size:
-    clamp(
-      38px,
-      5vw,
-      60px
-    );
+  font-size: clamp(
+    38px,
+    5vw,
+    60px
+  );
 
   line-height: 1;
 }
 
 .hero p {
   color: var(--muted);
+
   margin-top: 10px;
 }
 
 
-/* =========================================================
+/* =========================
    STATS
-========================================================= */
+========================= */
 
 .stats-grid {
   display: grid;
@@ -343,8 +311,7 @@ button:disabled {
       rgba(13,15,15,.95)
     );
 
-  border:
-    1px solid var(--border);
+  border: 1px solid var(--border);
 
   border-radius: 16px;
 
@@ -376,15 +343,11 @@ button:disabled {
 }
 
 
-/* =========================================================
+/* =========================
    TABLE SECTION
-========================================================= */
+========================= */
 
 .section-heading {
-  display: flex;
-
-  align-items: center;
-
   justify-content: space-between;
 
   margin-bottom: 18px;
@@ -424,9 +387,9 @@ button:disabled {
 }
 
 
-/* =========================================================
+/* =========================
    TABLE GRID
-========================================================= */
+========================= */
 
 .floor-grid {
   display: grid;
@@ -444,8 +407,7 @@ button:disabled {
 
   overflow: hidden;
 
-  border:
-    1px solid var(--border);
+  border: 1px solid var(--border);
 
   border-radius: 18px;
 
@@ -460,23 +422,30 @@ button:disabled {
 }
 
 .table-card:hover {
-  transform:
-    translateY(-3px);
+  transform: translateY(-3px);
 
   border-color: #464d4a;
 
   box-shadow:
-    0 16px 40px
-    rgba(0,0,0,.28);
+    0 16px 40px rgba(0,0,0,.28);
 }
+
+.table-card.playing {
+  border-color:
+    rgba(88,200,137,.25);
+}
+
+
+/* =========================
+   FELT
+========================= */
 
 .table-felt {
   height: 155px;
 
   margin: 14px;
 
-  border:
-    5px solid #4a2b17;
+  border: 5px solid #4a2b17;
 
   border-radius: 10px;
 
@@ -498,8 +467,7 @@ button:disabled {
 
   box-shadow:
     inset 0 0 0 2px #071d17,
-    inset 0 0 35px
-    rgba(0,0,0,.38);
+    inset 0 0 35px rgba(0,0,0,.38);
 }
 
 .pocket {
@@ -513,8 +481,7 @@ button:disabled {
   background: #020403;
 
   box-shadow:
-    inset 0 1px 3px
-    rgba(255,255,255,.08);
+    inset 0 1px 3px rgba(255,255,255,.08);
 }
 
 .p1 {
@@ -541,28 +508,26 @@ button:disabled {
   left: 50%;
   top: -7px;
 
-  transform:
-    translateX(-50%);
+  transform: translateX(-50%);
 }
 
 .p6 {
   left: 50%;
   bottom: -7px;
 
-  transform:
-    translateX(-50%);
+  transform: translateX(-50%);
 }
 
+
+/* =========================
+   TABLE INFO
+========================= */
+
 .table-info {
-  padding:
-    0 18px 18px;
+  padding: 0 18px 18px;
 }
 
 .table-header {
-  display: flex;
-
-  align-items: center;
-
   justify-content: space-between;
 }
 
@@ -582,10 +547,6 @@ button:disabled {
 }
 
 .table-bottom {
-  display: flex;
-
-  align-items: center;
-
   justify-content: space-between;
 
   margin-top: 12px;
@@ -605,18 +566,17 @@ button:disabled {
   font-size: 13px;
 }
 
-.table-card.playing {
-  border-color:
-    rgba(88,200,137,.25);
-}
+
+/* =========================
+   PLAYING
+========================= */
 
 .playing-overlay {
   position: absolute;
 
   inset: 0;
 
-  padding:
-    24px;
+  padding: 24px;
 
   display: flex;
 
@@ -661,10 +621,6 @@ button:disabled {
 }
 
 .playing-meta {
-  display: flex;
-
-  align-items: center;
-
   justify-content: space-between;
 
   gap: 15px;
@@ -679,31 +635,29 @@ button:disabled {
 .timer {
   color: var(--green);
 
-  font-variant-numeric:
-    tabular-nums;
+  font-variant-numeric: tabular-nums;
 
   font-weight: 600;
 }
 
 
-/* =========================================================
-   MODALS
-========================================================= */
+/* =========================
+   MODAL
+========================= */
 
 .modal-backdrop {
   position: fixed;
 
   inset: 0;
 
-  background:
-    rgba(0,0,0,.7);
+  background: rgba(0,0,0,.7);
 
-  backdrop-filter:
-    blur(7px);
+  backdrop-filter: blur(7px);
 
   display: none;
 
   align-items: center;
+
   justify-content: center;
 
   padding: 22px;
@@ -716,32 +670,28 @@ button:disabled {
 }
 
 .modal {
-  width:
-    min(
-      760px,
-      100%
-    );
+  width: min(
+    760px,
+    100%
+  );
 
-  max-height:
-    min(
-      900px,
-      92vh
-    );
+  max-height: min(
+    850px,
+    90vh
+  );
 
   overflow: auto;
 
   background: #101313;
 
-  border:
-    1px solid #303635;
+  border: 1px solid #303635;
 
   border-radius: 20px;
 
   padding: 28px;
 
   box-shadow:
-    0 30px 100px
-    rgba(0,0,0,.55);
+    0 30px 100px rgba(0,0,0,.55);
 }
 
 .modal h2 {
@@ -755,6 +705,25 @@ button:disabled {
 
   margin:
     6px 0 26px;
+}
+
+.modal-close {
+  float: right;
+
+  width: 34px;
+  height: 34px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 9px;
+
+  background: #151817;
+
+  color: var(--text);
+
+  font-size: 22px;
+
+  line-height: 1;
 }
 
 .form-label {
@@ -773,42 +742,28 @@ button:disabled {
 }
 
 
-/* =========================================================
+/* =========================
    INPUTS
-========================================================= */
+========================= */
 
 .input {
   width: 100%;
 
   background: #0b0e0d;
 
-  border:
-    1px solid #2b312f;
+  border: 1px solid #2b312f;
 
   border-radius: 10px;
 
   color: var(--text);
 
-  padding:
-    11px 13px;
+  padding: 11px 13px;
 
   outline: none;
 }
 
 .input:focus {
   border-color: #6b5a31;
-
-  box-shadow:
-    0 0 0 2px
-    rgba(199,166,90,.06);
-}
-
-.amount-input {
-  padding-left: 30px;
-
-  font-size: 19px;
-
-  font-weight: 600;
 }
 
 .amount-input-wrap {
@@ -826,22 +781,57 @@ button:disabled {
     translateY(-50%);
 
   color: var(--gold);
-
-  z-index: 1;
 }
 
-.amount-edit-hint {
-  color: #707773;
+.amount-input {
+  padding-left: 30px;
 
-  font-size: 10px;
+  font-size: 19px;
 
-  margin-top: 7px;
+  font-weight: 600;
 }
 
 
-/* =========================================================
-   PLAYER ROWS
-========================================================= */
+/* =========================
+   OPTIONS
+========================= */
+
+.game-options,
+.payment-options {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+.game-option,
+.pay-option {
+  background: #151918;
+
+  color: #c7ccc9;
+
+  border: 1px solid var(--border);
+
+  padding: 10px 14px;
+
+  border-radius: 10px;
+}
+
+.game-option.selected,
+.pay-option.selected {
+  border-color: var(--gold);
+
+  color: var(--gold);
+
+  background:
+    rgba(199,166,90,.08);
+}
+
+
+/* =========================
+   PLAYERS
+========================= */
 
 .player-row {
   display: flex;
@@ -856,8 +846,7 @@ button:disabled {
 
   border-radius: 10px;
 
-  border:
-    1px solid #3b2a2a;
+  border: 1px solid #3b2a2a;
 
   background: #171010;
 
@@ -878,75 +867,15 @@ button:disabled {
   padding: 8px 0;
 }
 
-.add-btn:hover {
-  text-decoration: underline;
-}
 
-
-/* =========================================================
-   GAME / PAYMENT OPTIONS
-========================================================= */
-
-.game-options,
-.payment-options {
-  display: flex;
-
-  flex-wrap: wrap;
-
-  gap: 8px;
-}
-
-.game-option,
-.pay-option {
-  background: #151918;
-
-  color: #c7ccc9;
-
-  border:
-    1px solid var(--border);
-
-  padding:
-    10px 14px;
-
-  border-radius: 10px;
-
-  transition: .2s ease;
-}
-
-.game-option:hover,
-.pay-option:hover {
-  border-color: #454b49;
-}
-
-.game-option.selected,
-.pay-option.selected {
-  border-color: var(--gold);
-
-  color: var(--gold);
-
-  background:
-    rgba(199,166,90,.08);
-}
-
-.unpaid-option.selected {
-  border-color: var(--red);
-
-  color: var(--red);
-
-  background:
-    rgba(227,109,109,.08);
-}
-
-
-/* =========================================================
+/* =========================
    BILL
-========================================================= */
+========================= */
 
 .bill {
   margin-top: 22px;
 
-  border:
-    1px solid var(--border);
+  border: 1px solid var(--border);
 
   border-radius: 13px;
 
@@ -960,8 +889,7 @@ button:disabled {
 
   gap: 15px;
 
-  padding:
-    12px 15px;
+  padding: 12px 15px;
 
   border-bottom:
     1px solid #222725;
@@ -993,242 +921,43 @@ button:disabled {
 }
 
 
-/* =========================================================
+/* =========================
    LOSER
-========================================================= */
+========================= */
 
 .loser-box {
-  margin-top: 3px;
-
-  padding:
-    15px;
-
-  border:
-    1px solid
-    rgba(227,109,109,.12);
-
-  border-radius: 13px;
+  border: 1px solid #443333;
 
   background:
-    rgba(227,109,109,.025);
-}
-
-.loser-hint {
-  color: #747b76;
-
-  font-size: 10px;
-
-  margin-bottom: 9px;
-}
-
-.loser-input:focus {
-  border-color:
-    rgba(227,109,109,.55);
-}
-
-.required-message {
-  display: none;
-
-  color: var(--red);
-
-  font-size: 10px;
-
-  margin-top: 7px;
-}
-
-.required-message.show {
-  display: block;
-}
-
-
-/* =========================================================
-   UNPAID MOBILE
-========================================================= */
-
-.unpaid-mobile-wrap {
-  display: none;
-
-  margin-top: 16px;
-
-  padding: 14px;
-
-  border:
-    1px solid
-    rgba(227,109,109,.16);
+    rgba(227,109,109,.04);
 
   border-radius: 12px;
 
-  background:
-    rgba(227,109,109,.035);
-}
-
-.unpaid-mobile-wrap.show {
-  display: block;
-}
-
-.unpaid-mobile-label {
-  color: var(--red);
-
-  font-size: 9px;
-
-  font-weight: 700;
-
-  letter-spacing: 1.5px;
-
-  margin-bottom: 8px;
-}
-
-.unpaid-mobile-hint {
-  color: #707773;
-
-  font-size: 10px;
-
-  margin-top: 6px;
-}
-
-
-/* =========================================================
-   CONTINUE
-========================================================= */
-
-.continue-actions {
-  display: grid;
-
-  grid-template-columns:
-    1fr 1.4fr 1.4fr;
-
-  gap: 9px;
-
-  margin-top: 25px;
-}
-
-.continue-note {
   padding: 14px;
 
-  margin-bottom: 16px;
-
-  border:
-    1px solid
-    rgba(199,166,90,.15);
-
-  background:
-    rgba(199,166,90,.04);
-
-  border-radius: 12px;
-
-  color: #a9aea9;
-
-  font-size: 11px;
-
-  line-height: 1.6;
-}
-
-.continue-note b {
-  color: var(--gold);
-}
-
-.continue-game-list {
   margin-top: 12px;
-
-  display: grid;
-
-  gap: 7px;
 }
 
-.continue-game-item {
-  display: flex;
-
-  justify-content: space-between;
-
-  align-items: center;
-
-  gap: 15px;
-
-  padding:
-    10px 12px;
-
-  border:
-    1px solid
-    rgba(255,255,255,.05);
-
-  border-radius: 9px;
-
-  background:
-    rgba(0,0,0,.15);
-}
-
-.continue-game-title {
-  color: #d9ddd9;
-
-  font-size: 11px;
-
-  font-weight: 600;
-}
-
-.continue-game-loser {
+.loser-box .form-label {
   color: var(--red);
 
-  font-size: 10px;
-
-  margin-top: 4px;
-}
-
-.continue-game-amount {
-  color: var(--gold);
-
-  font-weight: 700;
-
-  white-space: nowrap;
-}
-
-.btn-continue {
-  background:
-    rgba(88,200,137,.08);
-
-  border-color:
-    rgba(88,200,137,.28);
-
-  color: var(--green);
+  margin-top: 0;
 }
 
 
-/* =========================================================
-   BUTTONS
-========================================================= */
+/* =========================
+   ACTIONS
+========================= */
 
 .modal-actions,
 .report-actions {
-  display: flex;
-
-  align-items: center;
-
   justify-content: flex-end;
 
   gap: 9px;
 
   margin-top: 25px;
-}
 
-.btn {
-  border:
-    1px solid var(--border);
-
-  border-radius: 11px;
-
-  padding:
-    10px 16px;
-
-  color: var(--text);
-
-  background: #151817;
-
-  transition: .2s ease;
-}
-
-.btn:hover {
-  border-color: #454b49;
-
-  background: #1a1e1d;
+  flex-wrap: wrap;
 }
 
 .btn-primary {
@@ -1245,14 +974,42 @@ button:disabled {
   filter: brightness(1.08);
 }
 
-.btn-secondary {
-  background: #151817;
+.btn-danger {
+  background: rgba(227,109,109,.08);
+
+  color: var(--red);
+
+  border-color: rgba(227,109,109,.3);
+}
+
+.btn-success {
+  background: rgba(88,200,137,.08);
+
+  color: var(--green);
+
+  border-color: rgba(88,200,137,.3);
+}
+
+.btn:disabled {
+  opacity: .5;
+
+  cursor: not-allowed;
 }
 
 
-/* =========================================================
+/* =========================
    HISTORY
-========================================================= */
+========================= */
+
+.date-selector {
+  gap: 8px;
+
+  margin-bottom: 18px;
+}
+
+.date-selector .input {
+  flex: 1;
+}
 
 .history-summary {
   display: grid;
@@ -1278,10 +1035,7 @@ button:disabled {
 .history-wrap {
   overflow-x: auto;
 
-  max-height: 500px;
-
-  border:
-    1px solid var(--border);
+  border: 1px solid var(--border);
 
   border-radius: 12px;
 }
@@ -1294,212 +1048,74 @@ button:disabled {
   min-width: 900px;
 }
 
+.history-table th,
+.history-table td {
+  text-align: left;
+
+  padding: 11px 12px;
+
+  border-bottom:
+    1px solid #232725;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
 .history-table th {
-  position: sticky;
-
-  top: 0;
-
-  background: #151815;
-
   color: var(--gold);
 
   font-size: 9px;
 
-  text-transform: uppercase;
-
   letter-spacing: 1px;
-
-  padding:
-    11px 9px;
-
-  text-align: left;
-
-  white-space: nowrap;
-
-  z-index: 2;
 }
 
 .history-table td {
   color: #c7ccc9;
-
-  font-size: 10px;
-
-  padding:
-    11px 9px;
-
-  border-top:
-    1px solid
-    rgba(255,255,255,.045);
-
-  white-space: nowrap;
-
-  vertical-align: top;
 }
 
-.history-table tr:hover td {
-  background:
-    rgba(255,255,255,.025);
+.unpaid-row td {
+  color: #f0b0b0;
 }
 
-.history-game-detail {
-  display: grid;
-
-  gap: 5px;
+.paid-label {
+  color: var(--green);
 }
 
-.history-game-row {
-  font-size: 10px;
-}
-
-.history-game-row b {
-  color: #d9ddd9;
-}
-
-.history-loser {
-  color: var(--red) !important;
-}
-
-.history-game-loser {
+.unpaid-label {
   color: var(--red);
 }
 
-.report-actions {
-  display: grid;
 
-  grid-template-columns:
-    1fr 1fr;
+/* =========================
+   SEARCH
+========================= */
 
-  gap: 8px;
-}
-
-.empty {
-  padding: 30px;
-
-  text-align: center;
-
-  color: #646861;
-
-  font-size: 11px;
-}
-
-
-/* =========================================================
-   UNPAID
-========================================================= */
-
-.unpaid-search {
+.history-search {
   margin-bottom: 14px;
 }
 
-.unpaid-list {
-  display: grid;
-
-  gap: 8px;
-}
-
-.unpaid-item {
-  display: flex;
-
-  justify-content: space-between;
-
-  align-items: center;
-
-  gap: 15px;
-
-  padding: 15px;
-
-  border:
-    1px solid
-    rgba(227,109,109,.12);
-
-  border-radius: 12px;
-
-  background:
-    rgba(227,109,109,.025);
-
-  transition: .2s ease;
-}
-
-.unpaid-item:hover,
-.unpaid-item.loser-match {
-  border-color:
-    rgba(227,109,109,.38);
-
-  background:
-    rgba(227,109,109,.065);
-}
-
-.unpaid-player {
-  color: #e5e8e4;
-
-  font-size: 13px;
-
-  font-weight: 600;
-}
-
-.unpaid-loser {
-  color: var(--red);
-
-  font-size: 10px;
-
-  font-weight: 700;
-
-  margin-top: 5px;
-
-  text-transform: uppercase;
-}
-
-.unpaid-details {
-  color: #737a75;
-
-  font-size: 9px;
-
-  margin-top: 5px;
-
-  white-space: normal;
-}
-
-.unpaid-amount {
-  color: var(--red);
-
-  font-size: 18px;
-
-  font-weight: 700;
-
-  white-space: nowrap;
-}
-
-.unpaid-pay-btn {
-  margin-top: 10px;
-
-  padding:
-    7px 10px;
-
-  border:
-    1px solid
-    rgba(88,200,137,.25);
-
-  border-radius: 8px;
-
-  background:
-    rgba(88,200,137,.06);
-
-  color: var(--green);
-
-  font-size: 10px;
-
-  font-weight: 600;
-}
-
-.unpaid-pay-btn:hover {
-  background:
-    rgba(88,200,137,.12);
+.history-search input {
+  width: 100%;
 }
 
 
-/* =========================================================
+/* =========================
+   EMPTY
+========================= */
+
+.empty {
+  text-align: center;
+
+  color: var(--muted);
+
+  padding: 28px 10px;
+}
+
+
+/* =========================
    TOAST
-========================================================= */
+========================= */
 
 .toast {
   position: fixed;
@@ -1515,8 +1131,7 @@ button:disabled {
 
   color: #111;
 
-  padding:
-    11px 16px;
+  padding: 11px 16px;
 
   border-radius: 10px;
 
@@ -1541,9 +1156,52 @@ button:disabled {
 }
 
 
-/* =========================================================
-   RESPONSIVE
-========================================================= */
+/* =========================
+   AUTH
+========================= */
+
+.auth-modal {
+  width: min(
+    430px,
+    100%
+  );
+}
+
+.auth-logo {
+  width: 55px;
+  height: 55px;
+
+  display: grid;
+
+  place-items: center;
+
+  border-radius: 16px;
+
+  border: 1px solid #6d5a2e;
+
+  color: var(--gold);
+
+  font-family:
+    "Playfair Display",
+    serif;
+
+  font-size: 28px;
+
+  margin-bottom: 18px;
+}
+
+.auth-message {
+  margin-top: 12px;
+
+  font-size: 12px;
+
+  color: var(--red);
+}
+
+
+/* =========================
+   MOBILE
+========================= */
 
 @media (max-width: 1000px) {
 
@@ -1559,37 +1217,30 @@ button:disabled {
 
 }
 
-@media (max-width: 700px) {
+
+@media (max-width: 650px) {
 
   .topbar {
-    min-height: auto;
+    height: auto;
 
-    padding:
-      14px 16px;
+    padding: 15px 16px;
 
-    gap: 12px;
+    gap: 15px;
 
     align-items: flex-start;
   }
 
   .top-actions {
+    gap: 8px;
+
     flex-wrap: wrap;
 
     justify-content: flex-end;
-
-    gap: 6px;
   }
 
-  .connection-status,
-  .clock {
+  .clock,
+  .connection-status {
     display: none;
-  }
-
-  .header-btn {
-    padding:
-      8px 10px;
-
-    font-size: 10px;
   }
 
   .main-content {
@@ -1622,55 +1273,6 @@ button:disabled {
 
   .modal {
     padding: 20px;
-
-    border-radius: 16px;
-  }
-
-  .continue-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .report-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .unpaid-item {
-    align-items: flex-start;
-
-    flex-direction: column;
-  }
-
-  .unpaid-amount {
-    align-self: flex-end;
-  }
-
-}
-
-@media (max-width: 450px) {
-
-  .brand-sub {
-    letter-spacing: 2px;
-  }
-
-  .brand-name {
-    font-size: 16px;
-  }
-
-  .brand-mark {
-    width: 38px;
-    height: 38px;
-  }
-
-  .hero h1 {
-    font-size: 42px;
-  }
-
-  .table-card {
-    min-height: 220px;
-  }
-
-  .table-felt {
-    height: 135px;
   }
 
 }
