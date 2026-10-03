@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vantara Snooker Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">V</div>
+        <div>
+          <div class="brand-name">Vantara</div>
+          <div class="brand-sub">SNOOKER ACADEMY</div>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <div id="connectionStatus" class="connection-status offline">
+          <span></span> Connecting
+        </div>
+        <div id="clock" class="clock">--:--:--</div>
+        <button id="historyBtn" class="history-btn">History</button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <section class="hero">
+        <div>
+          <div class="eyebrow">RECEPTION DESK</div>
+          <h1>Table Floor</h1>
+          <p>Live table management</p>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <div class="stat-card">
+          <span>AVAILABLE</span>
+          <strong id="availableCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>PLAYING</span>
+          <strong id="playingCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>TODAY'S GAMES</span>
+          <strong id="gamesCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>COLLECTION</span>
+          <strong id="collection">₹0</strong>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">LIVE FLOOR</div>
+            <h2>Tables</h2>
+          </div>
+          <div class="legend">
+            <span><i class="legend-dot available"></i> Available</span>
+            <span><i class="legend-dot playing"></i> Playing</span>
+          </div>
+        </div>
+
+        <div id="floorGrid" class="floor-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div id="modal" class="modal" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
