@@ -762,8 +762,8 @@ async function finishGame(game, calculated) {
     const startDate = new Date(game.started_at);
 
     const gameDate = formatDateForDB(startDate);
-    const startTime = formatTimeForDB(startDate);
-    const endTime = formatTimeForDB(now);
+    const startTime = startDate.toISOString();
+    const endTime = now.toISOString();
 
     const { error: historyError } = await db
       .from("game_history")
