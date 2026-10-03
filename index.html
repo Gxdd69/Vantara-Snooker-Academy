@@ -79,7 +79,43 @@
   </div>
 
   <div id="toast" class="toast"></div>
+   <!-- OWNER LOGIN MODAL -->
+<div id="authModal" class="modal-backdrop" style="display:none;">
+  <div class="modal auth-modal">
+    <button id="closeAuthBtn" class="modal-close" type="button">×</button>
 
+    <div class="auth-logo">V</div>
+
+    <h2>Owner Login</h2>
+    <p class="modal-sub">Vantara Snooker Academy</p>
+
+    <form id="authForm">
+      <input
+        id="authEmail"
+        class="input"
+        type="email"
+        placeholder="Owner email"
+        autocomplete="email"
+        required
+      >
+
+      <input
+        id="authPassword"
+        class="input"
+        type="password"
+        placeholder="Password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button id="authLoginBtn" class="btn btn-primary" type="submit">
+        Login
+      </button>
+
+      <div id="authMessage" class="auth-message"></div>
+    </form>
+  </div>
+</div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
