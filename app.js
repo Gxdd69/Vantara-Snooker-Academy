@@ -3945,53 +3945,21 @@ function formatDateForDB(
 }
 
 
-function formatTimeDisplay(
-  value
-) {
+function formatTimeDisplay(value) {
+  if (!value) return "-";
 
-  if (!value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
     return "-";
   }
 
-
-  const parts =
-    String(value)
-      .split(":");
-
-
-  if (
-    parts.length < 2
-  ) {
-
-    return value;
-
-  }
-
-
-  const hours =
-    Number(
-      parts[0]
-    );
-
-
-  const minutes =
-    parts[1];
-
-
-  const suffix =
-    hours >= 12
-      ? "PM"
-      : "AM";
-
-
-  const displayHour =
-    hours % 12 ||
-    12;
-
-
-  return `${displayHour}:${minutes} ${suffix}`;
+  return date.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
 }
-
 
 function parseTimeToMinutes(
   value
